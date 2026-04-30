@@ -339,20 +339,45 @@ body:not(.light) .ptb{background:#0c1428;border-color:#151f35;color:#283848}
 .pdf-table tr:hover td{background:rgba(6,182,212,.04)}
 .pdf-cable{font-size:9px;padding:1px 6px;border-radius:4px;background:#0a1424;color:#64748b;white-space:nowrap}
 .pdf-inv-item{display:inline-block;margin:2px 4px 2px 0;padding:2px 9px;border-radius:12px;background:#0a1424;font-size:12px;color:#dde8f5}
-.pdf-inv-cat{margin-bottom:10px}
+.pdf-toggles{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-bottom:1px solid #1c2b44;background:#080f1c}
+.pdf-tog{padding:6px 12px;border-radius:20px;border:1.5px solid #1c2b44;background:transparent;color:#475569;font-size:12px;font-weight:600;cursor:pointer;touch-action:manipulation;transition:all .15s;white-space:nowrap}
+.pdf-tog.pdf-tog-on{background:rgba(6,182,212,.12);border-color:#06b6d4;color:#06b6d4}
+body.light .pdf-toggles{background:#f1f5f9}
+body.light .pdf-tog{border-color:#cbd5e1;color:#64748b}
+body.light .pdf-tog.pdf-tog-on{background:rgba(8,145,178,.1);border-color:#0891b2;color:#0891b2}
+.pdf-kit-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #0a1424;font-size:13px;color:#dde8f5}
+.pdf-kit-row:last-child{border-bottom:none}
+.pdf-kit-qty{font-weight:700;color:#06b6d4;font-size:12px;white-space:nowrap;margin-left:8px}
+body.light .pdf-kit-row{color:#1e293b;border-color:#e2e8f0}
+body.light .pdf-kit-qty{color:#0891b2}
 .pdf-inv-cat-lbl{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 @media(max-width:520px){.pdf-btn span{display:none}}
 /* ── Print ── */
 @media print{
-  #hdr,#lp,#rp,#ts,#leg,.ndel,#mob-nav,.ptb,#cv,#sel-bar{display:none!important}
-  #pdf-ov{position:static!important;background:none!important;padding:0!important;display:block!important}
-  #pdf-panel{box-shadow:none!important;border-radius:0!important;max-width:100%!important}
-  .pdf-btn{display:none!important}
-  body{background:white!important;color:#000!important}
-  .pdf-table td,.pdf-table th{color:#000!important;border-color:#ccc!important}
-  #pdf-panel,.pdf-section{background:white!important}
+  #hdr,#lp,#rp,#ts,#leg,.ndel,#mob-nav,.ptb,#cv,#sel-bar,#mr{display:none!important}
+  #pdf-ov{position:static!important;background:none!important;padding:0!important;display:block!important;overflow:visible!important}
+  #pdf-panel{box-shadow:none!important;border-radius:0!important;max-width:100%!important;background:white!important}
+  .pdf-btn,.pdf-toggles,.pdf-tog{display:none!important}
+  body{background:white!important;color:#000!important;margin:0!important;padding:0!important}
+  .pdf-hdr{border-bottom:1px solid #ccc!important}
+  .pdf-hdr h2{color:#0891b2!important}
+  .pdf-hdr p{color:#555!important}
+  .pdf-section{background:white!important;break-inside:avoid}
+  .pdf-section-title{color:#555!important}
+  .pdf-table td,.pdf-table th{color:#000!important;border-color:#ddd!important}
+  .pdf-table tr:hover td{background:none!important}
   .pdf-cable{background:#eee!important;color:#333!important}
   .pdf-inv-item{background:#eee!important;color:#000!important}
+  .pdf-kit-row{color:#000!important;border-color:#eee!important}
+  .pdf-kit-qty{color:#0891b2!important}
+  .pdf-inv-cat-lbl{color:#555!important}
+  #pdf-cv{max-width:100%!important;height:auto!important;border:1px solid #ddd!important;border-radius:4px!important}
+  textarea{border:1px solid #ccc!important;color:#000!important;background:white!important}
+  /* Hide toggled-off sections */
+  #pdf-sec-synop[style*="display: none"],
+  #pdf-sec-patch[style*="display: none"],
+  #pdf-sec-kit[style*="display: none"],
+  #pdf-sec-notes[style*="display: none"]{display:none!important}
 }
 mark{background:rgba(6,182,212,.25);color:inherit;border-radius:2px;padding:0 2px}
 body.dragging *{user-select:none!important;cursor:grabbing!important}
@@ -2111,12 +2136,11 @@ function exportJSON(){try{const blob=new Blob([JSON.stringify({version:"3.0",dat
 // ═══════════════════════════════════════════════════
 // PDF / PATCH LIST MODAL
 // ═══════════════════════════════════════════════════
-function openPDFModal(){
-  if(!S.nodes.length){toast("Canvas vide — rien à imprimer","warn",1500);return;}
-  document.getElementById("pdf-ov")?.remove();
-  const date=new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});
-  // Build patch rows
-  const rows=S.wires.map(w=>{
+// ═══════════════════════════════════════════════════
+// PDF / EXPORT MODAL
+// ═══════════════════════════════════════════════════
+function _buildPatchRows(){
+  return S.wires.map(w=>{
     const src=S.nodes.find(n=>n.id===w.fn),dst=S.nodes.find(n=>n.id===w.tn);
     if(!src||!dst)return null;
     const si=getItem(src),di=getItem(dst);
@@ -2124,62 +2148,189 @@ function openPDFModal(){
     const cab=CABLES[w.cable]||CABLES.def||{l:"Câble",c:"#475569"};
     return{srcName:src.label||si.name,srcIcon:src.icon||si.icon||"",srcPort:sp?.label||w.fp,
       dstName:dst.label||di.name,dstIcon:dst.icon||di.icon||"",dstPort:dp?.label||w.tp,
-      cable:cab.l,dstCat:di.cat||""};
-  }).filter(Boolean);
-  rows.sort((a,b)=>{
+      cable:cab.l,cabColor:cab.c||"#475569",dstCat:di.cat||""};
+  }).filter(Boolean).sort((a,b)=>{
     const am=a.dstCat.includes("mixer"),bm=b.dstCat.includes("mixer");
     if(am!==bm)return am?-1:1;
     return a.dstName.localeCompare(b.dstName)||a.dstPort.localeCompare(b.dstPort);
   });
-  const tableHTML=rows.length
+}
+function _buildKitMap(){
+  const kit={};
+  S.nodes.forEach(n=>{
+    const it=getItem(n);
+    const key=(it.cat||"other")+"||"+(it.name||"?");
+    if(!kit[key])kit[key]={cat:it.cat||"other",name:it.name||"?",icon:it.icon||"",qty:0};
+    kit[key].qty++;
+  });
+  return Object.values(kit).sort((a,b)=>(a.cat+a.name).localeCompare(b.cat+b.name));
+}
+function drawSynopCanvas(cv2,W,H){
+  if(!S.nodes.length)return;
+  const PAD=60;
+  const xs=S.nodes.map(n=>n.x),ys=S.nodes.map(n=>n.y);
+  const wx=Math.min(...xs)-PAD,wy=Math.min(...ys)-PAD;
+  const wW=Math.max(...xs)+200+PAD-wx,wH=Math.max(...ys)+100+PAD-wy;
+  const sc=Math.min(W/wW,H/wH)*0.94;
+  const ox=(W-wW*sc)/2,oy=(H-wH*sc)/2;
+  const ctx=cv2.getContext("2d");
+  cv2.width=W;cv2.height=H;
+  // BG
+  const isDark=!document.body.classList.contains("light");
+  ctx.fillStyle=isDark?"#080f1c":"#f8fafc";
+  ctx.fillRect(0,0,W,H);
+  // Grid dots
+  ctx.fillStyle=isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)";
+  const gStep=Math.max(16,32*sc);
+  for(let gx=ox%gStep;gx<W;gx+=gStep)for(let gy=oy%gStep;gy<H;gy+=gStep){ctx.beginPath();ctx.arc(gx,gy,1,0,Math.PI*2);ctx.fill();}
+  // Zones
+  S.zones.forEach(z=>{
+    const zx=(z.x-wx)*sc+ox,zy=(z.y-wy)*sc+oy,zw=z.w*sc,zh=z.h*sc;
+    ctx.fillStyle=hexRgba(z.color,.09);ctx.strokeStyle=z.color;ctx.lineWidth=Math.max(1,1.5*sc);
+    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(zx,zy,zw,zh,6);else ctx.rect(zx,zy,zw,zh);
+    ctx.fill();ctx.stroke();
+    ctx.fillStyle=z.color;ctx.font="bold "+Math.max(8,10*sc)+"px system-ui,sans-serif";
+    ctx.fillText(z.name,zx+6,zy+Math.max(12,16*sc));
+  });
+  // Wires
+  S.wires.forEach(w=>{
+    const src=S.nodes.find(n=>n.id===w.fn),dst=S.nodes.find(n=>n.id===w.tn);
+    if(!src||!dst)return;
+    const cab=CABLES[w.cable]||{c:"#475569"};
+    const sx=(src.x+190-wx)*sc+ox,sy=(src.y+55-wy)*sc+oy;
+    const dx=(dst.x-wx)*sc+ox,dy=(dst.y+55-wy)*sc+oy;
+    const cp=Math.abs(dx-sx)*0.45;
+    ctx.strokeStyle=cab.c+"88";ctx.lineWidth=Math.max(0.8,1.5*sc);
+    ctx.beginPath();ctx.moveTo(sx,sy);ctx.bezierCurveTo(sx+cp,sy,dx-cp,dy,dx,dy);ctx.stroke();
+  });
+  // Nodes
+  const NW=190*sc,NH=80*sc,R=Math.max(3,7*sc);
+  S.nodes.forEach(n=>{
+    const cat=CATS[n.cat]||{color:"#94a3b8"};
+    const it=getItem(n);
+    const nx=(n.x-wx)*sc+ox,ny=(n.y-wy)*sc+oy;
+    ctx.shadowColor="rgba(0,0,0,.28)";ctx.shadowBlur=Math.max(2,6*sc);
+    ctx.fillStyle=isDark?"#101b30":"#fff";ctx.strokeStyle=cat.color;ctx.lineWidth=Math.max(1,2*sc);
+    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(nx,ny,NW,NH,R);else ctx.rect(nx,ny,NW,NH);
+    ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+    // Color bar
+    ctx.fillStyle=cat.color;
+    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(nx,ny,NW,Math.max(2,4*sc),[R,R,0,0]);
+    else ctx.rect(nx,ny,NW,3*sc);ctx.fill();
+    // Icon + label
+    const fs=Math.max(7,10.5*sc);
+    ctx.font="600 "+fs+"px system-ui,sans-serif";
+    ctx.fillStyle=isDark?"#e2eaf8":"#1e293b";
+    const lbl=(n.icon||it.icon||"")+" "+(n.label||it.name||"");
+    ctx.fillText(lbl.slice(0,24),nx+5,ny+fs+Math.max(5,8*sc));
+    if(it.sub){
+      ctx.font=Math.max(5,8*sc)+"px system-ui,sans-serif";
+      ctx.fillStyle=isDark?"#475569":"#94a3b8";
+      ctx.fillText(it.sub.slice(0,28),nx+5,ny+fs*2+Math.max(7,10*sc));
+    }
+  });
+}
+function _pdfSectionVisible(id){
+  const el=document.getElementById("pdf-sec-"+id);
+  return el&&el.style.display!=="none";
+}
+function togglePdfSection(id,btn){
+  const el=document.getElementById("pdf-sec-"+id);if(!el)return;
+  const hidden=el.style.display==="none";
+  el.style.display=hidden?"":"none";
+  btn.classList.toggle("pdf-tog-on",hidden);
+}
+function openPDFModal(){
+  if(!S.nodes.length){toast("Canvas vide — rien à exporter","warn",1500);return;}
+  document.getElementById("pdf-ov")?.remove();
+  const date=new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});
+  const rows=_buildPatchRows();
+  const kit=_buildKitMap();
+  const canShare=!!navigator.share;
+  // Patch table
+  const patchHTML=rows.length
     ?'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="pdf-table">'
       +'<thead><tr><th>#</th><th>Source</th><th>Port</th><th></th><th>Destination</th><th>Port</th><th>Câble</th></tr></thead>'
       +'<tbody>'+rows.map((r,i)=>'<tr>'
-        +'<td style="color:#475569;font-size:11px;font-variant-numeric:tabular-nums">'+(i+1)+'</td>'
-        +'<td><span style="margin-right:4px">'+escHtml(r.srcIcon)+'</span>'+escHtml(r.srcName)+'</td>'
+        +'<td style="color:#475569;font-variant-numeric:tabular-nums;font-size:11px">'+(i+1)+'</td>'
+        +'<td>'+escHtml(r.srcIcon)+'&nbsp;'+escHtml(r.srcName)+'</td>'
         +'<td style="color:#475569;font-size:10px">'+escHtml(r.srcPort)+'</td>'
-        +'<td style="color:#06b6d4;font-weight:700;padding:6px 4px">→</td>'
-        +'<td><span style="margin-right:4px">'+escHtml(r.dstIcon)+'</span>'+escHtml(r.dstName)+'</td>'
+        +'<td style="color:'+escHtml(r.cabColor)+';font-weight:700;padding:0 4px">→</td>'
+        +'<td>'+escHtml(r.dstIcon)+'&nbsp;'+escHtml(r.dstName)+'</td>'
         +'<td style="color:#475569;font-size:10px">'+escHtml(r.dstPort)+'</td>'
         +'<td><span class="pdf-cable">'+escHtml(r.cable)+'</span></td>'
         +'</tr>').join('')+'</tbody></table></div>'
-    :'<div style="color:#475569;font-size:13px">Aucune connexion.</div>';
-  // Inventory
-  const cats={};
-  S.nodes.forEach(n=>{const it=getItem(n);const c=it.cat||"other";if(!cats[c])cats[c]=[];cats[c].push(n.label||it.name);});
-  const invHTML=Object.entries(cats).map(([cat,names])=>{
+    :'<p style="color:#475569;font-size:13px">Aucune connexion.</p>';
+  // Kit list grouped by category
+  const catGroups={};
+  kit.forEach(k=>{if(!catGroups[k.cat])catGroups[k.cat]=[];catGroups[k.cat].push(k);});
+  const kitHTML=Object.entries(catGroups).map(([cat,items])=>{
     const ci=CATS[cat]||{label:cat,icon:"📦"};
     return'<div class="pdf-inv-cat"><div class="pdf-inv-cat-lbl">'+escHtml(ci.icon)+" "+escHtml(ci.label)+'</div>'
-      +names.map(n=>'<span class="pdf-inv-item">'+escHtml(n)+'</span>').join('')+'</div>';
+      +items.map(k=>'<div class="pdf-kit-row"><span>'+escHtml(k.icon)+" "+escHtml(k.name)+'</span>'
+        +'<span class="pdf-kit-qty">×&nbsp;'+k.qty+'</span></div>').join('')+'</div>';
   }).join('');
-  const canShare=!!navigator.share;
-  const ov=document.createElement("div");
-  ov.id="pdf-ov";
-  ov.innerHTML='<div id="pdf-panel">'
+  const ov=document.createElement("div");ov.id="pdf-ov";
+  ov.innerHTML=
+    '<div id="pdf-panel">'
+    // Header
     +'<div class="pdf-hdr">'
-      +'<div class="pdf-title"><h2>SynOptic AV Pro</h2><p>Stage Plot & Patch List — '+escHtml(date)+'</p></div>'
-      +(canShare?'<button class="pdf-btn sec" onclick="sharePatchList()">📤 <span>Partager</span></button>':'')
-      +'<button class="pdf-btn pri" onclick="window.print()">🖨 <span>Imprimer</span></button>'
+      +'<div class="pdf-title"><h2>SynOptic AV Pro</h2><p>'+escHtml(date)+'</p></div>'
+      +(canShare?'<button class="pdf-btn sec" onclick="doShareExport()">📤</button>':'')
+      +'<button class="pdf-btn pri" onclick="window.print()">🖨 Imprimer</button>'
       +'<button class="pdf-btn cls" onclick="document.getElementById(\'pdf-ov\').remove()">✕</button>'
     +'</div>'
-    +'<div class="pdf-section"><div class="pdf-section-title">Patch List — '+rows.length+' connexion'+(rows.length!==1?"s":"")+'</div>'+tableHTML+'</div>'
-    +'<div class="pdf-section"><div class="pdf-section-title">Inventaire — '+S.nodes.length+' élément'+(S.nodes.length!==1?"s":"")+'</div>'+invHTML+'</div>'
+    // Section toggles
+    +'<div class="pdf-toggles">'
+      +'<button class="pdf-tog pdf-tog-on" onclick="togglePdfSection(\'synop\',this)">🗺 Synoptique</button>'
+      +'<button class="pdf-tog pdf-tog-on" onclick="togglePdfSection(\'patch\',this)">📋 Patch List</button>'
+      +'<button class="pdf-tog pdf-tog-on" onclick="togglePdfSection(\'kit\',this)">📦 Kit List</button>'
+      +'<button class="pdf-tog" onclick="togglePdfSection(\'notes\',this)">📝 Notes</button>'
+    +'</div>'
+    // Synoptique
+    +'<div class="pdf-section" id="pdf-sec-synop">'
+      +'<div class="pdf-section-title">🗺 Synoptique</div>'
+      +'<canvas id="pdf-cv" style="width:100%;border-radius:8px;display:block;background:#080f1c"></canvas>'
+    +'</div>'
+    // Patch
+    +'<div class="pdf-section" id="pdf-sec-patch">'
+      +'<div class="pdf-section-title">📋 Patch List — '+rows.length+' connexion'+(rows.length!==1?"s":"")+'</div>'
+      +patchHTML
+    +'</div>'
+    // Kit
+    +'<div class="pdf-section" id="pdf-sec-kit">'
+      +'<div class="pdf-section-title">📦 Kit List — '+S.nodes.length+' équipement'+(S.nodes.length!==1?"s":"")+'</div>'
+      +kitHTML
+    +'</div>'
+    // Notes
+    +'<div class="pdf-section" id="pdf-sec-notes" style="display:none">'
+      +'<div class="pdf-section-title">📝 Notes de production</div>'
+      +'<textarea id="pdf-notes" placeholder="Remarques techniques, contacts, horaires…" style="width:100%;min-height:100px;background:#0a1424;border:1px solid #1c2b44;border-radius:8px;color:#dde8f5;padding:10px;font-size:13px;box-sizing:border-box;resize:vertical;font-family:inherit"></textarea>'
+    +'</div>'
     +'</div>';
   ov.addEventListener("click",e=>{if(e.target===ov)ov.remove();});
   document.body.appendChild(ov);
+  // Draw synoptique canvas after DOM is ready
+  requestAnimationFrame(()=>{
+    const cv2=document.getElementById("pdf-cv");if(!cv2)return;
+    const W=cv2.clientWidth||700;
+    drawSynopCanvas(cv2,W,Math.round(W*0.55));
+  });
 }
-function sharePatchList(){
+function doShareExport(){
   if(!navigator.share)return;
   const date=new Date().toLocaleDateString("fr-FR");
-  let txt="SynOptic AV Pro — Patch List\n"+date+"\n\n";
-  S.wires.forEach((w,i)=>{
-    const src=S.nodes.find(n=>n.id===w.fn),dst=S.nodes.find(n=>n.id===w.tn);
-    if(!src||!dst)return;
-    txt+=(i+1)+". "+(src.label||getItem(src).name)+" → "+(dst.label||getItem(dst).name)+"\n";
-  });
-  txt+="\nInventaire :\n";
-  S.nodes.forEach(n=>{txt+="• "+(n.label||getItem(n).name)+"\n";});
-  navigator.share({title:"Patch List — SynOptic AV Pro",text:txt}).catch(()=>{});
+  let txt="SynOptic AV Pro\n"+date+"\n";
+  if(_pdfSectionVisible("patch")&&S.wires.length){
+    txt+="\n━━ PATCH LIST ━━\n";
+    _buildPatchRows().forEach((r,i)=>{txt+=(i+1)+". "+r.srcName+" ["+r.srcPort+"] → "+r.dstName+" ["+r.dstPort+"] — "+r.cable+"\n";});
+  }
+  if(_pdfSectionVisible("kit")&&S.nodes.length){
+    txt+="\n━━ KIT LIST ━━\n";
+    _buildKitMap().forEach(k=>{const ci=CATS[k.cat]||{label:k.cat};txt+="• "+k.name+" ×"+k.qty+" ("+ci.label+")\n";});
+  }
+  if(_pdfSectionVisible("notes")){const n=document.getElementById("pdf-notes")?.value?.trim();if(n)txt+="\n━━ NOTES ━━\n"+n+"\n";}
+  navigator.share({title:"Export AV — SynOptic",text:txt}).catch(()=>{});
 }
 
 // ═══════════════════════════════════════════════════
