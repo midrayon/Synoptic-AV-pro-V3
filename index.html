@@ -672,20 +672,35 @@ function ptl(t){return PL[t]||"?"}
 
 function nodeWarns(node,nodes,wires){
   const item=allI().find(i=>i.id===node.itemId)||{};const w=[];
+  // ── Ruban : phantom 48V = destruction définitive ──────────────
   if(item.cat==="mic_ribbon"){
-    const hasConsole=wires.some(x=>(x.toNode===node.id||x.fromNode===node.id)&&(()=>{
-      const othId=x.toNode===node.id?x.fromNode:x.toNode;
+    const hasConsole=wires.some(x=>(x.tn===node.id||x.fn===node.id)&&(()=>{
+      const othId=x.tn===node.id?x.fn:x.tn;
       const oth=nodes.find(n=>n.id===othId);
       return oth&&(oth.cat==="mixer_digital"||oth.cat==="mixer_analog");
     })());
     if(hasConsole)w.push({lv:"warn",msg:"⚠ Vérifiez que le Phantom 48V est OFF sur cette voie — un ruban s'y détruit !"});
   }
+  // ── Instrument jack → console directement : bruit de masse ────
   if(item.cat==="instrument_string"||item.cat==="instrument_keys"){
-    const directMixer=wires.filter(x=>x.fromNode===node.id).some(x=>{
-      const t=nodes.find(n=>n.id===x.toNode);
+    const directMixer=wires.filter(x=>x.fn===node.id).some(x=>{
+      const t=nodes.find(n=>n.id===x.tn);
       return t&&(t.cat==="mixer_digital"||t.cat==="mixer_analog");
     });
     if(directMixer)w.push({lv:"warn",msg:"⚠ Jack instrument → console directement : risque de bruit de masse. Utilisez une DI."});
+  }
+  // ── Capacité entrées mixer / stage box / interface ─────────────
+  if(item.maxInputs!==undefined){
+    const totalIn=wires.filter(x=>x.tn===node.id).length;
+    if(totalIn>item.maxInputs){
+      w.push({lv:"err",msg:"🚫 Surcharge : "+totalIn+" sources sur "+item.maxInputs+" entrées — impossible physiquement !"});
+    }
+    if(item.maxMicInputs!==undefined&&item.maxMicInputs<item.maxInputs){
+      const micIn=wires.filter(x=>x.tn===node.id&&x.tp==="xi").length;
+      if(micIn>item.maxMicInputs){
+        w.push({lv:"err",msg:"🚫 "+micIn+" micros sur "+item.maxMicInputs+" préamplis XLR — dépassement de capacité !"});
+      }
+    }
   }
   return w;
 }
@@ -766,17 +781,17 @@ const DB=[
   // GOOSENECK
   {id:"mx418",cat:"mic_goose",name:"Shure MX418/C",sub:"Col de cygne 45cm conférence",icon:"🦢",phantom:true,desc:"Référence église et conférence.",tags:["Conférence","48V"],ports:[p("o","out",PT.XLR_M,"Sortie XLR (48V)")],prereqs:["Phantom 48V","Câble XLR","Montage sur pupitre ou table"]},
   // DIGITAL MIXERS
-  {id:"tf1",cat:"mixer_digital",name:"Yamaha TF1",sub:"16 voies tactile Dante",icon:"🎛",desc:"Console tactile 7\u201d. Dante optionnel.",tags:["Numérique","Tactile","Dante"],ports:[p("xi","in",PT.XLR_F,"Entrées XLR 1-16 micro/ligne"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Aux"),p("dn","out",PT.DANTE_OUT,"Dante (carte NY64-D)")],prereqs:["Alimentation 230V","Câbles XLR","Carte Dante NY64-D si réseau audio"]},
-  {id:"sq5",cat:"mixer_digital",name:"Allen & Heath SQ-5",sub:"96kHz 48 voies AES50",icon:"🎛",desc:"96kHz natif. Qualité remarquable.",tags:["Numérique","96kHz","AES50"],ports:[p("xi","in",PT.XLR_F,"Entrées locales XLR 1-16"),p("aeso","out",PT.AES50_OUT,"AES50 A+B vers stage box"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Aux")],prereqs:["Alimentation 230V","Stage box AR2412 ou DX168","CAT5e/6 STP blindé ≤100m"]},
-  {id:"x32",cat:"mixer_digital",name:"Behringer X32",sub:"32 voies AES50 motorisées",icon:"🎛",desc:"32 voies motorisées. Excellent qualité/prix.",tags:["Numérique","AES50"],ports:[p("xi","in",PT.XLR_F,"Entrées locales XLR 1-16"),p("aeso","out",PT.AES50_OUT,"AES50 A+B vers stage box"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Bus")],prereqs:["Alimentation 230V","Câbles XLR","Stage box S16/S32 pour AES50"]},
-  {id:"xr18",cat:"mixer_digital",name:"Behringer XR18",sub:"Rack 18 voies iPad WiFi",icon:"🎛",desc:"18 entrées. Contrôle iPad uniquement.",tags:["Numérique","iPad","WiFi"],ports:[p("xi","in",PT.XLR_F,"XLR/combo 1-16"),p("ji","in",PT.JACK_IN,"Jack 17-18 ligne"),p("xo","out",PT.XLR_M,"Sorties XLR LR + 4 Bus")],prereqs:["Alimentation 230V","Router WiFi 2.4GHz","iPad + appli X Air","Câbles XLR"]},
-  {id:"m32",cat:"mixer_digital",name:"Midas M32",sub:"32 voies préamplis Midas",icon:"🎛",desc:"Préamplis Midas légendaires. AES50 natif.",tags:["Numérique","AES50","Pro"],ports:[p("xi","in",PT.XLR_F,"Entrées locales XLR 1-16"),p("aeso","out",PT.AES50_OUT,"AES50 A+B vers stage box"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Bus")],prereqs:["Alimentation 230V","Stage box DL16/DL32 pour AES50"]},
+  {id:"tf1",cat:"mixer_digital",name:"Yamaha TF1",sub:"16 voies tactile Dante",icon:"🎛",desc:"Console tactile 7\u201d. Dante optionnel.",tags:["Numérique","Tactile","Dante"],maxInputs:16,maxMicInputs:16,ports:[p("xi","in",PT.XLR_F,"Entrées XLR 1-16 micro/ligne"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Aux"),p("dn","out",PT.DANTE_OUT,"Dante (carte NY64-D)")],prereqs:["Alimentation 230V","Câbles XLR","Carte Dante NY64-D si réseau audio"]},
+  {id:"sq5",cat:"mixer_digital",name:"Allen & Heath SQ-5",sub:"96kHz 48 voies AES50",icon:"🎛",desc:"96kHz natif. Qualité remarquable.",tags:["Numérique","96kHz","AES50"],maxInputs:16,maxMicInputs:16,ports:[p("xi","in",PT.XLR_F,"Entrées locales XLR 1-16"),p("aeso","out",PT.AES50_OUT,"AES50 A+B vers stage box"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Aux")],prereqs:["Alimentation 230V","Stage box AR2412 ou DX168","CAT5e/6 STP blindé ≤100m"]},
+  {id:"x32",cat:"mixer_digital",name:"Behringer X32",sub:"32 voies AES50 motorisées",icon:"🎛",desc:"32 voies motorisées. Excellent qualité/prix.",tags:["Numérique","AES50"],maxInputs:16,maxMicInputs:16,ports:[p("xi","in",PT.XLR_F,"Entrées locales XLR 1-16"),p("aeso","out",PT.AES50_OUT,"AES50 A+B vers stage box"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Bus")],prereqs:["Alimentation 230V","Câbles XLR","Stage box S16/S32 pour AES50"]},
+  {id:"xr18",cat:"mixer_digital",name:"Behringer XR18",sub:"Rack 18 voies iPad WiFi",icon:"🎛",desc:"18 entrées. Contrôle iPad uniquement.",tags:["Numérique","iPad","WiFi"],maxInputs:18,maxMicInputs:16,ports:[p("xi","in",PT.XLR_F,"XLR/combo 1-16"),p("ji","in",PT.JACK_IN,"Jack 17-18 ligne"),p("xo","out",PT.XLR_M,"Sorties XLR LR + 4 Bus")],prereqs:["Alimentation 230V","Router WiFi 2.4GHz","iPad + appli X Air","Câbles XLR"]},
+  {id:"m32",cat:"mixer_digital",name:"Midas M32",sub:"32 voies préamplis Midas",icon:"🎛",desc:"Préamplis Midas légendaires. AES50 natif.",tags:["Numérique","AES50","Pro"],maxInputs:16,maxMicInputs:16,ports:[p("xi","in",PT.XLR_F,"Entrées locales XLR 1-16"),p("aeso","out",PT.AES50_OUT,"AES50 A+B vers stage box"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Bus")],prereqs:["Alimentation 230V","Stage box DL16/DL32 pour AES50"]},
   {id:"dlive",cat:"mixer_digital",name:"Allen & Heath dLive S5000",sub:"Touring FPGA 96kHz",icon:"🎛",desc:"Système touring haut de gamme. FPGA.",tags:["Numérique","96kHz","Touring"],ports:[p("mo","out",PT.MADI_OUT,"MADI vers MixRack"),p("dn","out",PT.DANTE_OUT,"Dante réseau"),p("xo","out",PT.XLR_M,"Sorties XLR locales")],prereqs:["MixRack DM32 ou DM64","MADI ou réseau Dante Gigabit","Technicien certifié A&H"]},
   {id:"cl5",cat:"mixer_digital",name:"Yamaha CL5",sub:"72 voies Dante touring pro",icon:"🎛",desc:"Flagship Yamaha. 72 voies Dante.",tags:["Numérique","Dante","Pro","Touring"],ports:[p("dn","out",PT.DANTE_OUT,"Dante vers Rio stage box"),p("xo","out",PT.XLR_M,"Sorties XLR locales")],prereqs:["Stagebox Rio3224-D2 ou Rio1608-D2","CAT6 Gigabit vers switch Dante","Technicien qualifié"]},
   // ANALOG MIXERS
-  {id:"mg16xu",cat:"mixer_analog",name:"Yamaha MG16XU",sub:"16 voies analogique USB FX",icon:"🎚",desc:"Analogique fiable. Effets SPX intégrés.",tags:["Analogique","16 voies"],ports:[p("xi","in",PT.XLR_F,"Entrées micro XLR 1-8"),p("ji","in",PT.JACK_IN,"Entrées ligne Jack 9-16"),p("xo","out",PT.XLR_M,"Sorties Master LR XLR"),p("jo","out",PT.JACK_TRS,"Bus / Direct Jack TRS")],prereqs:["Alimentation 230V","Câbles XLR et Jack 6.35"]},
-  {id:"profx12",cat:"mixer_analog",name:"Mackie ProFX12v3",sub:"12 voies USB FX",icon:"🎚",desc:"12 voies, FX intégrés, USB stéréo.",tags:["Analogique","12 voies"],ports:[p("xi","in",PT.XLR_F,"Entrées micro XLR 1-6"),p("ji","in",PT.JACK_IN,"Entrées ligne Jack 7-12"),p("xo","out",PT.XLR_M,"Sorties XLR LR")],prereqs:["Alimentation 230V","Câbles XLR et Jack"]},
-  {id:"zed22fx",cat:"mixer_analog",name:"Allen & Heath ZED-22FX",sub:"22 voies GB30 FX",icon:"🎚",desc:"Préamplis GB30. FX intégrés.",tags:["Analogique","22 voies"],ports:[p("xi","in",PT.XLR_F,"Entrées XLR 1-8"),p("ji","in",PT.JACK_IN,"Entrées ligne Jack 9-22"),p("xo","out",PT.XLR_M,"Master LR XLR")],prereqs:["Alimentation 230V","Câbles XLR et Jack"]},
+  {id:"mg16xu",cat:"mixer_analog",name:"Yamaha MG16XU",sub:"16 voies analogique USB FX",icon:"🎚",desc:"Analogique fiable. Effets SPX intégrés.",tags:["Analogique","16 voies"],maxInputs:16,maxMicInputs:8,ports:[p("xi","in",PT.XLR_F,"Entrées micro XLR 1-8"),p("ji","in",PT.JACK_IN,"Entrées ligne Jack 9-16"),p("xo","out",PT.XLR_M,"Sorties Master LR XLR"),p("jo","out",PT.JACK_TRS,"Bus / Direct Jack TRS")],prereqs:["Alimentation 230V","Câbles XLR et Jack 6.35"]},
+  {id:"profx12",cat:"mixer_analog",name:"Mackie ProFX12v3",sub:"12 voies USB FX",icon:"🎚",desc:"12 voies, FX intégrés, USB stéréo.",tags:["Analogique","12 voies"],maxInputs:12,maxMicInputs:6,ports:[p("xi","in",PT.XLR_F,"Entrées micro XLR 1-6"),p("ji","in",PT.JACK_IN,"Entrées ligne Jack 7-12"),p("xo","out",PT.XLR_M,"Sorties XLR LR")],prereqs:["Alimentation 230V","Câbles XLR et Jack"]},
+  {id:"zed22fx",cat:"mixer_analog",name:"Allen & Heath ZED-22FX",sub:"22 voies GB30 FX",icon:"🎚",desc:"Préamplis GB30. FX intégrés.",tags:["Analogique","22 voies"],maxInputs:22,maxMicInputs:8,ports:[p("xi","in",PT.XLR_F,"Entrées XLR 1-8"),p("ji","in",PT.JACK_IN,"Entrées ligne Jack 9-22"),p("xo","out",PT.XLR_M,"Master LR XLR")],prereqs:["Alimentation 230V","Câbles XLR et Jack"]},
   // ACTIVE SPEAKERS
   {id:"k12",cat:"speaker_active",name:"QSC K12.2",sub:"Active 12\u201d 2000W DSP",icon:"🔊",desc:"Référence active. 2000W classe D. 8 presets DSP.",tags:["Active","12\u201d","2000W"],ports:[p("xi","in",PT.XLR_F,"XLR In (depuis console ou processeur)"),p("ji","in",PT.JACK_IN,"Jack In (optionnel)"),p("xth","out",PT.XLR_M,"XLR Thru vers autre enceinte")],prereqs:["Alimentation 230V","Câble XLR depuis console ou processeur","Pied enceinte"]},
   {id:"k10",cat:"speaker_active",name:"QSC K10.2",sub:"Active 10\u201d 2000W",icon:"🔊",desc:"Version 10\u201d compacte.",tags:["Active","10\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In"),p("xth","out",PT.XLR_M,"XLR Thru")],prereqs:["Alimentation 230V","Câble XLR"]},
@@ -807,17 +822,17 @@ const DB=[
   {id:"jdi",cat:"di",name:"Radial JDI",sub:"DI passive Jensen mono",icon:"🔌",desc:"Transformateur Jensen. Sans alimentation.",tags:["DI","Passive"],ports:[p("ji","in",PT.JACK_IN,"Jack In (instrument)"),p("xo","out",PT.XLR_M,"XLR Out vers console")],prereqs:["Câble Jack 6.35","Câble XLR console"]},
   {id:"type85",cat:"di",name:"Countryman Type 85",sub:"DI active instrument",icon:"🔌",desc:"Appréciée basse et guitare.",tags:["DI","Active","48V"],ports:[p("ji","in",PT.JACK_IN,"Jack In"),p("jth","out",PT.JACK_TS,"Jack Thru"),p("xo","out",PT.XLR_M,"XLR Out vers console")],prereqs:["Phantom 48V","Câble Jack","Câble XLR"]},
   // STAGE BOXES
-  {id:"s16",cat:"stagebox",name:"Behringer S16",sub:"16in/8out AES50 X32/M32",icon:"📦",desc:"Stage box X32/M32 via AES50 CAT5e.",tags:["Stage Box","AES50","X32"],ports:[p("xisb","in",PT.XLR_F,"16× XLR In sources scène"),p("xosb","out",PT.XLR_M,"8× XLR Out retours scène"),p("aesin","in",PT.AES50_IN,"AES50 depuis console X32/M32")],prereqs:["Console X32 ou M32 ou compatible AES50","CAT5e STP ≤100m","Alimentation 230V en scène"]},
-  {id:"ar2412",cat:"stagebox",name:"Allen & Heath AR2412",sub:"24in/12out AES50 SQ série",icon:"📦",desc:"Stage box SQ. 96kHz.",tags:["Stage Box","AES50","SQ"],ports:[p("xisb","in",PT.XLR_F,"24× XLR In"),p("xosb","out",PT.XLR_M,"12× XLR Out retours"),p("aesin","in",PT.AES50_IN,"AES50 depuis console SQ")],prereqs:["Console SQ-5/6/7","CAT5e STP ≤100m","Alimentation 230V"]},
-  {id:"rio3224",cat:"stagebox",name:"Yamaha Rio3224-D2",sub:"32in/16out Dante stage box",icon:"📦",desc:"Stage box Dante. Jusqu\u2019à 4 consoles.",tags:["Stage Box","Dante","Yamaha"],ports:[p("xisb","in",PT.XLR_F,"32× XLR In"),p("xosb","out",PT.XLR_M,"16× XLR Out retours"),p("dno","out",PT.DANTE_OUT,"Dante vers console(s)")],prereqs:["Console Dante (TF/CL/QL)","CAT6 STP ≤100m switch Gigabit","Alimentation 230V scène"]},
+  {id:"s16",cat:"stagebox",name:"Behringer S16",sub:"16in/8out AES50 X32/M32",icon:"📦",desc:"Stage box X32/M32 via AES50 CAT5e.",tags:["Stage Box","AES50","X32"],maxInputs:16,maxMicInputs:16,ports:[p("xisb","in",PT.XLR_F,"16× XLR In sources scène"),p("xosb","out",PT.XLR_M,"8× XLR Out retours scène"),p("aesin","in",PT.AES50_IN,"AES50 depuis console X32/M32")],prereqs:["Console X32 ou M32 ou compatible AES50","CAT5e STP ≤100m","Alimentation 230V en scène"]},
+  {id:"ar2412",cat:"stagebox",name:"Allen & Heath AR2412",sub:"24in/12out AES50 SQ série",icon:"📦",desc:"Stage box SQ. 96kHz.",tags:["Stage Box","AES50","SQ"],maxInputs:24,maxMicInputs:24,ports:[p("xisb","in",PT.XLR_F,"24× XLR In"),p("xosb","out",PT.XLR_M,"12× XLR Out retours"),p("aesin","in",PT.AES50_IN,"AES50 depuis console SQ")],prereqs:["Console SQ-5/6/7","CAT5e STP ≤100m","Alimentation 230V"]},
+  {id:"rio3224",cat:"stagebox",name:"Yamaha Rio3224-D2",sub:"32in/16out Dante stage box",icon:"📦",desc:"Stage box Dante. Jusqu\u2019à 4 consoles.",tags:["Stage Box","Dante","Yamaha"],maxInputs:32,maxMicInputs:32,ports:[p("xisb","in",PT.XLR_F,"32× XLR In"),p("xosb","out",PT.XLR_M,"16× XLR Out retours"),p("dno","out",PT.DANTE_OUT,"Dante vers console(s)")],prereqs:["Console Dante (TF/CL/QL)","CAT6 STP ≤100m switch Gigabit","Alimentation 230V scène"]},
   // PROCESSORS
   {id:"drivepa2",cat:"processor",name:"dbx DriveRack PA2",sub:"Processeur système EQ crossover délai",icon:"⚙️",desc:"EQ 31 bandes, crossover, délai, limiteur, RTA.",tags:["Processeur","EQ","Crossover"],ports:[p("xip1","in",PT.XLR_F,"XLR In L (depuis console)"),p("xip2","in",PT.XLR_F,"XLR In R (depuis console)"),p("xop1","out",PT.XLR_M,"XLR Out 1 tops L"),p("xop2","out",PT.XLR_M,"XLR Out 2 tops R"),p("xop3","out",PT.XLR_M,"XLR Out 3 sub L"),p("xop4","out",PT.XLR_M,"XLR Out 4 sub R")],prereqs:["Alimentation 230V","XLR depuis console","XLR vers amplis ou enceintes actives","Assistant setup via appli"]},
   {id:"dn360",cat:"processor",name:"Klark Teknik DN360",sub:"EQ graphique 31 bandes stéréo",icon:"⚙️",desc:"EQ graphique analogique référence.",tags:["EQ","Graphique","31 bandes"],ports:[p("xil","in",PT.XLR_F,"XLR In L"),p("xir","in",PT.XLR_F,"XLR In R"),p("xol","out",PT.XLR_M,"XLR Out L"),p("xor","out",PT.XLR_M,"XLR Out R")],prereqs:["Alimentation 230V","XLR insert console ou câblage série"]},
   {id:"dbx260",cat:"processor",name:"dbx 260",sub:"Processeur loudspeaker 6 sorties",icon:"⚙️",desc:"Crossover, délai, EQ paramétrique.",tags:["Processeur","Crossover","6 sorties"],ports:[p("xi1","in",PT.XLR_F,"XLR In L"),p("xi2","in",PT.XLR_F,"XLR In R"),p("xo1","out",PT.XLR_M,"XLR Out 1"),p("xo2","out",PT.XLR_M,"XLR Out 2"),p("xo3","out",PT.XLR_M,"XLR Out 3"),p("xo4","out",PT.XLR_M,"XLR Out 4"),p("xo5","out",PT.XLR_M,"XLR Out 5"),p("xo6","out",PT.XLR_M,"XLR Out 6")],prereqs:["Alimentation 230V","XLR depuis console","XLR vers amplis"]},
   // INTERFACES
-  {id:"scarlett",cat:"interface",name:"Focusrite Scarlett 18i20",sub:"USB 18in/20out",icon:"🖥",desc:"Interface USB 18 entrées. Studio et live.",tags:["Interface","USB"],ports:[p("xi","in",PT.XLR_F,"XLR/Jack combo 1-8"),p("xo","out",PT.XLR_M,"Sorties XLR 1-8")],prereqs:["PC/Mac USB-C","DAW (Reaper, Logic, Pro Tools)","Câbles XLR"]},
+  {id:"scarlett",cat:"interface",name:"Focusrite Scarlett 18i20",sub:"USB 18in/20out",icon:"🖥",desc:"Interface USB 18 entrées. Studio et live.",tags:["Interface","USB"],maxInputs:18,maxMicInputs:8,ports:[p("xi","in",PT.XLR_F,"XLR/Jack combo 1-8"),p("xo","out",PT.XLR_M,"Sorties XLR 1-8")],prereqs:["PC/Mac USB-C","DAW (Reaper, Logic, Pro Tools)","Câbles XLR"]},
   // RECORDERS
-  {id:"h6",cat:"recorder",name:"Zoom H6",sub:"Portable 6 pistes",icon:"⏺",desc:"6 pistes portable. Capsule interchangeable.",tags:["Portable","6 pistes"],ports:[p("xi","in",PT.XLR_F,"XLR/Jack In 1-4")],prereqs:["Batteries AA ou USB","Carte SD","Sources XLR ou Jack"]},
+  {id:"h6",cat:"recorder",name:"Zoom H6",sub:"Portable 6 pistes",icon:"⏺",desc:"6 pistes portable. Capsule interchangeable.",tags:["Portable","6 pistes"],maxInputs:4,maxMicInputs:4,ports:[p("xi","in",PT.XLR_F,"XLR/Jack In 1-4")],prereqs:["Batteries AA ou USB","Carte SD","Sources XLR ou Jack"]},
   {id:"da6400",cat:"recorder",name:"Tascam DA-6400",sub:"64 pistes Dante/MADI rack 2U",icon:"⏺",desc:"64 pistes via Dante ou MADI.",tags:["Dante","MADI","64 pistes"],ports:[p("di","in",PT.DANTE_IN,"Dante In"),p("mi","in",PT.MADI_IN,"MADI In")],prereqs:["Alimentation 230V","Switch Dante Gigabit ou convertisseur MADI","Disques SSD internes"]},
   // INSTRUMENTS
   {id:"gelect",cat:"instrument_string",name:"Guitare électrique",sub:"Signal passif Jack 6.35 TS",icon:"🎸",desc:"Signal passif. Nécessite DI active ou ampli microphonié.",tags:["Jack","Passif"],ports:[p("o","out",PT.JACK_TS,"Jack 6.35 TS (instrument)")],prereqs:["OPTION A: DI active (Radial J48) → XLR console","OPTION B: Ampli guitare + SM57 → XLR console","Câble Jack 6.35 mono"]},
@@ -869,7 +884,7 @@ const DB=[
   {id:"elgato-wave-xl",cat:"encoder",name:"Blackmagic Web Presenter 4K",sub:"Encodeur streaming USB/Ethernet HDMI ou SDI",icon:"📡",desc:"Encode HDMI ou SDI en USB ou Ethernet pour streaming.",tags:["Encodeur","USB","Ethernet","4K"],ports:[p("hi","in",PT.HDMI_IN,"HDMI In 4K"),p("sdi","in",PT.SDI_IN,"SDI In 4K"),p("usb","out",PT.USB_OUT,"USB (webcam vers PC streaming)"),p("eth","out",PT.ETH_OUT,"Ethernet (RTMP direct vers plateforme)")],prereqs:["Source HDMI ou SDI depuis switcher","USB vers PC ou connexion Ethernet directe","Compte streaming (YouTube, Twitch, etc.)"]},
   {id:"teradek-bolt-6",cat:"encoder",name:"Teradek Bolt 6 XT",sub:"Transmetteur vidéo sans fil SDI/HDMI",icon:"📡",desc:"Transmission sans fil 0-frame delay. 1500ft. SDI et HDMI.",tags:["Sans fil","SDI","HDMI","Broadcast"],ports:[p("sdi","in",PT.SDI_IN,"SDI In"),p("hi","in",PT.HDMI_IN,"HDMI In"),p("sdi","out",PT.SDI_OUT,"SDI Out (récepteur)"),p("hi","out",PT.HDMI_OUT,"HDMI Out (récepteur)")],prereqs:["Alimentation V-Mount ou Gold Mount","Source SDI ou HDMI depuis caméra","Récepteur Bolt 6 XT côté régie","Réseau WiFi 5GHz dégagé"]},
   {id:"liveu-solo",cat:"encoder",name:"LiveU Solo",sub:"Encodeur streaming multi-SIM",icon:"📡",desc:"Streaming pro avec bonding 4G/5G/WiFi. Redondance réseau.",tags:["Streaming","4G","5G","Bonding"],ports:[p("hi","in",PT.HDMI_IN,"HDMI In"),p("sdi","in",PT.SDI_IN,"SDI In"),p("eth","out",PT.ETH_OUT,"Ethernet (streaming vers LiveU Cloud)")],prereqs:["Abonnement LiveU","Cartes SIM 4G/5G","Source HDMI ou SDI","Alimentation secteur ou batterie V-Mount"]},
-  {id:"yamaha-ag08",cat:"encoder",name:"Yamaha AG08",sub:"Interface streaming audio 8 voies USB",icon:"📡",desc:"Mixeur interface streaming 8 voies. Effets, USB-C, loopback.",tags:["USB-C","Audio","Streaming","Mixeur"],ports:[p("xi","in",PT.XLR_F,"XLR In 1-4 (micro/ligne)"),p("ji","in",PT.JACK_IN,"Jack In 5-8"),p("usbc","out",PT.USBC_OUT,"USB-C (audio vers PC streaming)")],prereqs:["Alimentation 230V","Sources XLR ou Jack","Câble USB-C vers PC","Logiciel streaming OBS ou Streamlabs"]},
+  {id:"yamaha-ag08",cat:"encoder",name:"Yamaha AG08",sub:"Interface streaming audio 8 voies USB",icon:"📡",desc:"Mixeur interface streaming 8 voies. Effets, USB-C, loopback.",tags:["USB-C","Audio","Streaming","Mixeur"],maxInputs:8,maxMicInputs:4,ports:[p("xi","in",PT.XLR_F,"XLR In 1-4 (micro/ligne)"),p("ji","in",PT.JACK_IN,"Jack In 5-8"),p("usbc","out",PT.USBC_OUT,"USB-C (audio vers PC streaming)")],prereqs:["Alimentation 230V","Sources XLR ou Jack","Câble USB-C vers PC","Logiciel streaming OBS ou Streamlabs"]},
 
   // ── ORDINATEURS & LOGICIELS ───────────────────────────────────
   {id:"pc-streaming",cat:"computer",name:"PC Régie Streaming",sub:"Workstation Windows dédié streaming",icon:"💻",desc:"PC haute performance pour encoder, mixer et streamer en simultané.",tags:["Windows","OBS","vMix","NDI"],ports:[p("usb","in",PT.USB_IN,"USB 3.0 (cartes de capture)"),p("eth","in",PT.ETH_IN,"Ethernet Gigabit (réseau NDI)"),p("dp","out",PT.DP_OUT,"DisplayPort vers écrans régie"),p("hdmio","out",PT.HDMI_OUT,"HDMI vers moniteur")],prereqs:["CPU i9 ou Ryzen 9 (12+ cœurs min)","GPU NVIDIA pour encodage NVENC","32 Go RAM minimum","SSD NVMe pour enregistrement","Windows 10/11 Pro","Carte réseau Gigabit dédiée"]},
@@ -893,8 +908,8 @@ const DB=[
   {id:"rode-podmic-usb",cat:"stream_audio",name:"Rode PodMic USB",sub:"Micro dynamique USB streaming",icon:"🎙",desc:"Dynamique cardioïde USB-C. Parfait streaming et podcast.",tags:["USB","Dynamique","Podcast","Streaming"],ports:[p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur")],prereqs:["Port USB-C","Bras micro recommandé","Traitement acoustique ou filtre anti-pop"]},
   {id:"rode-nt-usb",cat:"stream_audio",name:"Rode NT-USB Mini",sub:"Condensateur USB streaming",icon:"🎙",desc:"Condensateur cardiöide compact USB-A. Plug & play.",tags:["USB","Condensateur","Streaming"],ports:[p("usb","out",PT.USB_OUT,"USB-A vers ordinateur")],prereqs:["Port USB-A ou adaptateur","Bras micro","Espace calme ou traitement acoustique"]},
   {id:"shure-sm7b-usb",cat:"stream_audio",name:"Shure SM7dB",sub:"Dynamique broadcast USB-C + XLR",icon:"🎙",desc:"SM7B avec préampli intégré. USB-C ou XLR. Référence streaming.",tags:["USB-C","XLR","Broadcast","Streaming"],ports:[p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur"),p("xlr","out",PT.XLR_M,"XLR vers interface audio")],prereqs:["Bras micro","Port USB-C ou interface XLR","Traitement acoustique recommandé"]},
-  {id:"focusrite-solo",cat:"stream_audio",name:"Focusrite Scarlett Solo 4th gen",sub:"Interface audio USB-C 1 entrée XLR",icon:"🎙",desc:"1 préampli XLR + 1 Jack. USB-C. Idéale streaming solo.",tags:["USB-C","XLR","Interface","Streaming"],ports:[p("xi","in",PT.XLR_F,"XLR In (micro)"),p("ji","in",PT.JACK_IN,"Jack In (instrument)"),p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur")],prereqs:["Micro XLR (SM7B, SM58…)","Câble XLR","Câble USB-C vers PC","Logiciel DAW ou OBS"]},
-  {id:"wave-xlr",cat:"stream_audio",name:"Elgato Wave XLR",sub:"Interface XLR USB streaming",icon:"🎙",desc:"1 entrée XLR avec préampli. USB-C. Intégration Wave Link.",tags:["USB-C","XLR","Streaming"],ports:[p("xi","in",PT.XLR_F,"XLR In (micro)"),p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur")],prereqs:["Micro XLR","Câble XLR","Logiciel Wave Link","Câble USB-C"]},
+  {id:"focusrite-solo",cat:"stream_audio",name:"Focusrite Scarlett Solo 4th gen",sub:"Interface audio USB-C 1 entrée XLR",icon:"🎙",desc:"1 préampli XLR + 1 Jack. USB-C. Idéale streaming solo.",tags:["USB-C","XLR","Interface","Streaming"],maxInputs:2,maxMicInputs:1,ports:[p("xi","in",PT.XLR_F,"XLR In (micro)"),p("ji","in",PT.JACK_IN,"Jack In (instrument)"),p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur")],prereqs:["Micro XLR (SM7B, SM58…)","Câble XLR","Câble USB-C vers PC","Logiciel DAW ou OBS"]},
+  {id:"wave-xlr",cat:"stream_audio",name:"Elgato Wave XLR",sub:"Interface XLR USB streaming",icon:"🎙",desc:"1 entrée XLR avec préampli. USB-C. Intégration Wave Link.",tags:["USB-C","XLR","Streaming"],maxInputs:1,maxMicInputs:1,ports:[p("xi","in",PT.XLR_F,"XLR In (micro)"),p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur")],prereqs:["Micro XLR","Câble XLR","Logiciel Wave Link","Câble USB-C"]},
 
   // ── TALLY & INTERCOM ─────────────────────────────────────────
   {id:"tally-arbiter",cat:"tally",name:"Tally Arbiter",sub:"Système tally universel open source",icon:"🔴",desc:"Centralise les tallys de tous les switchers (ATEM, vMix…). Raspberry Pi.",tags:["Tally","Open Source","ATEM","vMix"],ports:[p("eth","in",PT.ETH_IN,"Ethernet (LAN)"),p("talo","out",PT.TALLY_OUT,"Tally Out vers lumières cameras")],prereqs:["Raspberry Pi ou PC","Logiciel Tally Arbiter (gratuit)","Réseau local","Switcher ATEM ou vMix configuré"]},
@@ -1368,6 +1383,38 @@ function connectPorts(fnid,fpid,ftype,fdir,tnid,tpid,ttype,tdir){
   if(S.wires.find(w=>(w.fn===fnid&&w.fp===fpid&&w.tn===tnid&&w.tp===tpid)||
                       (w.fn===tnid&&w.fp===tpid&&w.tn===fnid&&w.tp===fpid))){
     toast("Connexion déjà présente","warn",1200);return;
+  }
+  // ── Vérification de capacité d'entrées (règle pro) ─────────────
+  {
+    const _tNode=S.nodes.find(n=>n.id===tnid);
+    if(_tNode){
+      const _tItem=allI().find(i=>i.id===_tNode.itemId)||{};
+      if(_tItem.maxInputs!==undefined){
+        // Vérifier les entrées XLR micro (ports "xi" ou "xisb")
+        const _isXlrPort=(tpid==="xi"||tpid==="xisb");
+        if(_tItem.maxMicInputs!==undefined&&_isXlrPort){
+          const _micUsed=S.wires.filter(w=>w.tn===tnid&&(w.tp==="xi"||w.tp==="xisb")).length;
+          if(_micUsed>=_tItem.maxMicInputs){
+            toast("🚫 "+_tItem.name+" : entrées XLR/micro saturées ("+_tItem.maxMicInputs+"/"+_tItem.maxMicInputs+") — toutes les voies micro sont occupées !","err",4000);return;
+          }
+        }
+        // Vérifier les entrées Jack ligne (port "ji")
+        if(_tItem.maxMicInputs!==undefined&&tpid==="ji"){
+          const _lineMax=_tItem.maxInputs-_tItem.maxMicInputs;
+          if(_lineMax>0){
+            const _lineUsed=S.wires.filter(w=>w.tn===tnid&&w.tp==="ji").length;
+            if(_lineUsed>=_lineMax){
+              toast("🚫 "+_tItem.name+" : entrées ligne Jack saturées ("+_lineMax+"/"+_lineMax+") — toutes les voies ligne sont occupées !","err",4000);return;
+            }
+          }
+        }
+        // Vérifier la capacité totale
+        const _allUsed=S.wires.filter(w=>w.tn===tnid).length;
+        if(_allUsed>=_tItem.maxInputs){
+          toast("🚫 "+_tItem.name+" : toutes les entrées sont occupées ("+_tItem.maxInputs+"/"+_tItem.maxInputs+") — impossible d'ajouter une source !","err",4000);return;
+        }
+      }
+    }
   }
   const cable=cableType(ftype,ttype);
   const wire={id:gid("w"),fn:fnid,fp:fpid,tn:tnid,tp:tpid,cable};
