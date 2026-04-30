@@ -353,32 +353,7 @@ body.light .pdf-kit-qty{color:#0891b2}
 .pdf-inv-cat-lbl{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
 @media(max-width:520px){.pdf-btn span{display:none}}
 /* ── Print ── */
-@media print{
-  #hdr,#lp,#rp,#ts,#leg,.ndel,#mob-nav,.ptb,#cv,#sel-bar,#mr{display:none!important}
-  #pdf-ov{position:static!important;background:none!important;padding:0!important;display:block!important;overflow:visible!important}
-  #pdf-panel{box-shadow:none!important;border-radius:0!important;max-width:100%!important;background:white!important}
-  .pdf-btn,.pdf-toggles,.pdf-tog{display:none!important}
-  body{background:white!important;color:#000!important;margin:0!important;padding:0!important}
-  .pdf-hdr{border-bottom:1px solid #ccc!important}
-  .pdf-hdr h2{color:#0891b2!important}
-  .pdf-hdr p{color:#555!important}
-  .pdf-section{background:white!important;break-inside:avoid}
-  .pdf-section-title{color:#555!important}
-  .pdf-table td,.pdf-table th{color:#000!important;border-color:#ddd!important}
-  .pdf-table tr:hover td{background:none!important}
-  .pdf-cable{background:#eee!important;color:#333!important}
-  .pdf-inv-item{background:#eee!important;color:#000!important}
-  .pdf-kit-row{color:#000!important;border-color:#eee!important}
-  .pdf-kit-qty{color:#0891b2!important}
-  .pdf-inv-cat-lbl{color:#555!important}
-  #pdf-cv{max-width:100%!important;height:auto!important;border:1px solid #ddd!important;border-radius:4px!important}
-  textarea{border:1px solid #ccc!important;color:#000!important;background:white!important}
-  /* Hide toggled-off sections */
-  #pdf-sec-synop[style*="display: none"],
-  #pdf-sec-patch[style*="display: none"],
-  #pdf-sec-kit[style*="display: none"],
-  #pdf-sec-notes[style*="display: none"]{display:none!important}
-}
+/* L'impression passe par une fenêtre dédiée (doPrint) — pas de @media print sur l'app principale */
 mark{background:rgba(6,182,212,.25);color:inherit;border-radius:2px;padding:0 2px}
 body.dragging *{user-select:none!important;cursor:grabbing!important}
 .tag{display:inline-block;font-size:8px;font-weight:600;padding:1px 4px;border-radius:3px;background:#0a1424;color:#3a5070;margin:1px}
@@ -2277,7 +2252,7 @@ function openPDFModal(){
     +'<div class="pdf-hdr">'
       +'<div class="pdf-title"><h2>SynOptic AV Pro</h2><p>'+escHtml(date)+'</p></div>'
       +(canShare?'<button class="pdf-btn sec" onclick="doShareExport()">📤</button>':'')
-      +'<button class="pdf-btn pri" onclick="window.print()">🖨 Imprimer</button>'
+      +'<button class="pdf-btn pri" onclick="doPrint()">🖨 Imprimer</button>'
       +'<button class="pdf-btn cls" onclick="document.getElementById(\'pdf-ov\').remove()">✕</button>'
     +'</div>'
     // Section toggles
@@ -2316,6 +2291,71 @@ function openPDFModal(){
     const W=cv2.clientWidth||700;
     drawSynopCanvas(cv2,W,Math.round(W*0.55));
   });
+}
+function doPrint(){
+  const synopVis=_pdfSectionVisible("synop");
+  const patchVis=_pdfSectionVisible("patch");
+  const kitVis=_pdfSectionVisible("kit");
+  const notesVis=_pdfSectionVisible("notes");
+  const notesText=notesVis?(document.getElementById("pdf-notes")?.value||""):"";
+  const synopImg=synopVis?(document.getElementById("pdf-cv")?.toDataURL("image/png")||null):null;
+  const date=new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});
+  const rows=_buildPatchRows();
+  const kit=_buildKitMap();
+  const catGroups={};kit.forEach(k=>{if(!catGroups[k.cat])catGroups[k.cat]=[];catGroups[k.cat].push(k);});
+  let h='<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>SynOptic AV Pro — Export</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:system-ui,-apple-system,sans-serif;color:#1e293b;background:#fff;padding:24px 28px;font-size:13px;line-height:1.5}'
+    +'h1{font-size:22px;font-weight:800;color:#0891b2;margin-bottom:3px}'
+    +'.sub{color:#64748b;font-size:12px;margin-bottom:22px}'
+    +'h2{font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin:22px 0 10px;padding-bottom:5px;border-bottom:2px solid #e2e8f0}'
+    +'table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px}'
+    +'th{text-align:left;padding:5px 8px;border-bottom:2px solid #e2e8f0;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}'
+    +'td{padding:6px 8px;border-bottom:1px solid #f1f5f9;vertical-align:middle}'
+    +'.arr{color:#0891b2;font-weight:700;padding:0 2px}'
+    +'.cab{font-size:9px;padding:1px 7px;border-radius:3px;background:#f1f5f9;color:#64748b;white-space:nowrap}'
+    +'.cat-lbl{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px}'
+    +'.kit-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f1f5f9}'
+    +'.kit-row:last-child{border-bottom:none}'
+    +'.qty{font-weight:700;color:#0891b2;margin-left:10px}'
+    +'img.synop{width:100%;border:1px solid #e2e8f0;border-radius:6px;display:block}'
+    +'pre{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;font-family:inherit;background:#f8fafc;white-space:pre-wrap;word-break:break-word}'
+    +'@media print{body{padding:12px}h2{page-break-before:avoid}table{page-break-inside:avoid}}'
+    +'</style></head><body>'
+    +'<h1>SynOptic AV Pro</h1><div class="sub">'+escHtml(date)+'</div>';
+  if(synopImg){
+    h+='<h2>🗺 Synoptique</h2><img class="synop" src="'+synopImg+'" alt="Synoptique">';
+  }
+  if(patchVis){
+    h+='<h2>📋 Patch List — '+rows.length+' connexion'+(rows.length!==1?"s":"")+'</h2>';
+    if(rows.length){
+      h+='<table><thead><tr><th>#</th><th>Source</th><th>Port</th><th></th><th>Destination</th><th>Port</th><th>Câble</th></tr></thead><tbody>';
+      rows.forEach((r,i)=>{
+        h+='<tr><td style="color:#94a3b8;font-variant-numeric:tabular-nums">'+(i+1)+'</td>'
+          +'<td>'+escHtml(r.srcIcon)+'&nbsp;'+escHtml(r.srcName)+'</td>'
+          +'<td style="color:#94a3b8;font-size:10px">'+escHtml(r.srcPort)+'</td>'
+          +'<td class="arr">→</td>'
+          +'<td>'+escHtml(r.dstIcon)+'&nbsp;'+escHtml(r.dstName)+'</td>'
+          +'<td style="color:#94a3b8;font-size:10px">'+escHtml(r.dstPort)+'</td>'
+          +'<td><span class="cab">'+escHtml(r.cable)+'</span></td></tr>';
+      });
+      h+='</tbody></table>';
+    }else h+='<p style="color:#94a3b8">Aucune connexion.</p>';
+  }
+  if(kitVis){
+    h+='<h2>📦 Kit List — '+S.nodes.length+' équipement'+(S.nodes.length!==1?"s":"")+'</h2>';
+    Object.entries(catGroups).forEach(([cat,items])=>{
+      const ci=CATS[cat]||{label:cat,icon:"📦"};
+      h+='<div class="cat-lbl">'+escHtml(ci.icon)+" "+escHtml(ci.label)+'</div>';
+      items.forEach(k=>{h+='<div class="kit-row"><span>'+escHtml(k.icon)+" "+escHtml(k.name)+'</span><span class="qty">×'+k.qty+'</span></div>';});
+    });
+  }
+  if(notesVis&&notesText.trim()){h+='<h2>📝 Notes</h2><pre>'+escHtml(notesText)+'</pre>';}
+  h+='</body></html>';
+  const w=window.open("","_blank");
+  if(!w){toast("Popups bloquées — autorisez-les pour ce site puis réessayez","warn",3500);return;}
+  w.document.write(h);w.document.close();w.focus();
+  setTimeout(()=>{w.print();},400);
 }
 function doShareExport(){
   if(!navigator.share)return;
