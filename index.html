@@ -2084,14 +2084,22 @@ cv.addEventListener("touchend",e=>{
 // ── MOUSE WHEEL ZOOM (desktop) ────────────────────────────────
 cv.addEventListener("wheel",e=>{
   e.preventDefault();
-  const r=cvRect();
-  const px=e.clientX-r.left, py=e.clientY-r.top;
-  const factor=e.deltaY<0?1.12:0.9;
-  const newScale=Math.min(MAX_SCALE,Math.max(MIN_SCALE,Z.scale*factor));
-  const sf=newScale/Z.scale;
-  Z.ox=px-(px-Z.ox)*sf;
-  Z.oy=py-(py-Z.oy)*sf;
-  Z.scale=newScale;
+  if(e.ctrlKey||e.metaKey){
+    // Ctrl+wheel = zoom centré sur le curseur
+    const r=cvRect();
+    const px=e.clientX-r.left,py=e.clientY-r.top;
+    const factor=e.deltaY<0?1.12:0.9;
+    const newScale=Math.min(MAX_SCALE,Math.max(MIN_SCALE,Z.scale*factor));
+    const sf=newScale/Z.scale;
+    Z.ox=px-(px-Z.ox)*sf;
+    Z.oy=py-(py-Z.oy)*sf;
+    Z.scale=newScale;
+  }else{
+    // Molette seule = pan (trackpad : deltaX+deltaY natifs)
+    const mul=e.deltaMode===1?20:1;
+    Z.ox-=e.deltaX*mul;
+    Z.oy-=e.deltaY*mul;
+  }
   applyTransform();
 },{passive:false});
 
