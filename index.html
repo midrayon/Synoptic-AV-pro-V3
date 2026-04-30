@@ -1123,6 +1123,10 @@ function attachDrag(el,node){
     const dragAll=S.sel.includes(node.id)&&S.sel.length>1;
     const origins={};
     if(dragAll){S.sel.forEach(nid=>{const n=S.nodes.find(x=>x.id===nid);if(n)origins[nid]={x:n.x,y:n.y};});}
+    // Snapshot for undo (captured before any move)
+    const _histSnap=dragAll
+      ?S.sel.map(nid=>origins[nid]?{id:nid,x:origins[nid].x,y:origins[nid].y}:null).filter(Boolean)
+      :[{id:node.id,x:ox,y:oy}];
     function mv(me){
       const dx=me.clientX-sx,dy=me.clientY-sy;
       if(!moved&&Math.hypot(dx,dy)<6)return;
@@ -1147,7 +1151,7 @@ function attachDrag(el,node){
       if(!moved){
         if(ctrlHeld||S.multiMode){selectNode(node.id,true);}
         else{selectNode(node.id,false);}
-      }else{sv("nodes");}
+      }else{pH({a:"moveNodes",snap:_histSnap});sv("nodes");}
       el.removeEventListener("pointermove",mv);
       el.removeEventListener("pointerup",up);
     }
