@@ -1635,6 +1635,7 @@ function undoAction(){
   else if(last.a==="remNode"){S.nodes.push(last.node);S.wires.push(...(last.wires||[]));}
   else if(last.a==="addWire"){S.wires=S.wires.filter(w=>w.id!==last.wire.id);}
   else if(last.a==="remWire"){S.wires.push(last.wire);}
+  else if(last.a==="moveNodes"){last.snap.forEach(s=>{const n=S.nodes.find(x=>x.id===s.id);if(n){n.x=s.x;n.y=s.y;}});}
   sv("nodes");sv("wires");renderNodes();renderWires();updateUI();toast("Annulé","info",1000);
 }
 
@@ -1652,6 +1653,7 @@ function clearCanvas(){
 
 function alignNodes(dir){
   if(S.sel.length<2){toast("Sélectionnez au moins 2 éléments","warn",1400);return;}
+  pH({a:"moveNodes",snap:S.sel.map(id=>{const n=S.nodes.find(x=>x.id===id);return n?{id,x:n.x,y:n.y}:null;}).filter(Boolean)});
   const items=S.sel.map(id=>{
     const n=S.nodes.find(x=>x.id===id);
     const el=document.querySelector('[data-nid="'+id+'"]');
