@@ -1,0 +1,2727 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=0.2,maximum-scale=5,viewport-fit=cover">
+<title>SynOptic AV Pro v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+body{font-family:"Outfit",system-ui,sans-serif;background:#080f1e;color:#dde8f5;font-size:14px}
+button,select,input,textarea{font-family:inherit;font-size:inherit}
+input,select,textarea{outline:none}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(148,163,184,.2);border-radius:3px}
+
+/* ── Layout ── */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+#hdr{display:flex;align-items:center;gap:6px;padding:0 10px;height:46px;border-bottom:1px solid #151f35;background:#0c1428;flex-shrink:0;z-index:30}
+#body{display:flex;flex:1;overflow:hidden;min-height:0}
+#lp{display:flex;flex-direction:column;width:266px;border-right:1px solid #151f35;background:#0c1428;flex-shrink:0;overflow:hidden;transition:width .18s,opacity .18s}
+#lp.hide{width:0;opacity:0;pointer-events:none}
+#rp{display:flex;flex-direction:column;width:266px;border-left:1px solid #151f35;background:#0c1428;flex-shrink:0;overflow:hidden;transition:width .18s,opacity .18s}
+#rp.hide{width:0;opacity:0;pointer-events:none}
+#cw{flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+#cv{flex:1;position:relative;overflow:hidden;background:#080f1e;background-image:radial-gradient(rgba(148,163,184,.1) 1px,transparent 1px);background-size:28px 28px;touch-action:none}
+#cv.cm{cursor:crosshair}
+#stage{position:absolute;inset:0;width:100%;height:100%;transform-origin:0 0;will-change:transform}
+#sl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;overflow:visible}
+#nl{position:absolute;inset:0;z-index:8;pointer-events:none;width:100%;height:100%}
+
+body.light{background:#f0f4f8;color:#0f172a}
+body.light #hdr,body.light #lp,body.light #rp{background:#fff;border-color:#e2e8f0}
+body.light #cv{background:#f5f7fb;background-image:radial-gradient(rgba(100,116,139,.15) 1px,transparent 1px)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:8px;border:1px solid #1e2d48;background:transparent;color:#6888aa;cursor:pointer;font-size:12px;font-weight:500;transition:all .12s;white-space:nowrap;flex-shrink:0}
+.btn:hover{background:#151f35;color:#ddeeff;border-color:#283d60}
+.btn.on{background:#0b6da0;border-color:#0b6da0;color:#fff}
+.btn.red:hover{border-color:#7f1d1d;color:#fca5a5}
+body.light .btn{border-color:#dde3ef;color:#64748b;background:#f8fafc}
+body.light .btn:hover{background:#eef2f8;color:#1e293b}
+body.light .btn.on{background:#0891b2;border-color:#0891b2;color:#fff}
+
+/* ── Node ── */
+.node{position:absolute;min-width:154px;max-width:192px;border-radius:12px;border:2px solid #1c2b44;background:#101b30;user-select:none;touch-action:none;transition:box-shadow .15s,border-color .15s;pointer-events:all}
+.node:hover{box-shadow:0 0 0 1px #283d60}
+.node.sel{border-color:#06b6d4!important;box-shadow:0 0 0 3px rgba(6,182,212,.2)!important}
+.node.nw{border-color:#f59e0b!important;box-shadow:0 0 0 2px rgba(245,158,11,.15)!important}
+.node.ne{border-color:#ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.15)!important}
+body.light .node{background:#fff;border-color:#e2e8f0}
+.nbar{height:3px;border-radius:10px 10px 0 0}
+.nhd{display:flex;align-items:center;gap:6px;padding:6px 7px 4px}
+.nico{font-size:16px;flex-shrink:0}
+.nlbl{font-size:11.5px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d8e8f8}
+.ndel{width:16px;height:16px;border-radius:4px;border:none;background:transparent;color:#2a3d58;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;padding:0}
+.ndel:hover{background:#3d0f0f;color:#fca5a5}
+body.light .nlbl{color:#0f172a}
+.nports{padding:2px 5px 5px}
+.pr{display:flex;align-items:center;gap:6px;padding:5px 5px;border-radius:8px;cursor:grab;min-height:44px;-webkit-tap-highlight-color:transparent;border:1.5px solid transparent;transition:background .1s,border-color .1s;touch-action:none}
+.pr:hover .pd{transform:scale(1.4);background:currentColor}
+.pr.out{justify-content:flex-end}
+.pr.dragging-src{opacity:.5;cursor:grabbing}
+.pr.drop-ok{background:rgba(16,210,80,.15)!important;border-color:rgba(16,210,80,.5)!important;animation:port-pulse .5s ease infinite alternate}
+.pr.drop-no{opacity:.2;pointer-events:none}
+@keyframes port-pulse{from{border-color:rgba(16,210,80,.3)}to{border-color:rgba(16,210,80,.8);box-shadow:0 0 8px rgba(16,210,80,.3)}}
+body.light .pr:hover{background:rgba(0,0,0,.04)}
+body.light .pr.drop-ok{background:rgba(16,180,80,.1)!important;border-color:rgba(16,180,80,.45)!important}
+.pd{width:12px;height:12px;border-radius:50%;border:2.5px solid currentColor;background:transparent;transition:transform .13s,background .13s,box-shadow .13s;flex-shrink:0}
+.pr:not(.dis):not(.ic):hover .pd{background:currentColor;transform:scale(1.2)}
+.pd.lit{background:currentColor}
+.pr.cp .pd{box-shadow:0 0 0 3px rgba(16,210,80,.3)}
+.plbl{font-size:9.5px;color:#3a5070;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:118px;line-height:1.3}
+.ptyp{font-size:7px;font-family:"JetBrains Mono",monospace;padding:1px 3px;border-radius:3px;background:#151f35;color:#3a5070;flex-shrink:0}
+body.light .plbl{color:#94a3b8}
+body.light .ptyp{background:#eef2f8}
+body.light .pr:hover{background:rgba(0,0,0,.03)}
+.nnp{font-size:9px;color:#1c2b44;text-align:center;padding:3px 0}
+.nwmsg{font-size:9px;padding:2px 5px 3px;color:#f59e0b;line-height:1.4}
+.nemsg{font-size:9px;padding:2px 5px 3px;color:#ef4444;line-height:1.4}
+body.cm .pr.cp .pd{animation:pulse-c .7s ease-in-out infinite alternate}
+@keyframes pulse-c{from{transform:scale(1)}to{transform:scale(1.5);box-shadow:0 0 5px currentColor}}
+
+/* ── Library ── */
+.ph{flex-shrink:0;padding:9px}
+.sw{position:relative;margin-bottom:7px}
+.sw input{width:100%;padding:6px 25px;border-radius:8px;border:1px solid #151f35;background:#080f1e;color:#d8e8f8;font-size:12px}
+.sw input::placeholder{color:#283848}
+.sw input:focus{border-color:#0891b2}
+.si{position:absolute;left:7px;top:50%;transform:translateY(-50%);color:#283848;pointer-events:none;font-size:11px}
+.sc{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:#283848;cursor:pointer;font-size:11px;padding:1px}
+body.light .sw input{background:#f0f4f8;border-color:#dde3ef;color:#0f172a}
+.cats{display:flex;flex-wrap:wrap;gap:3px;max-height:112px;overflow-y:auto}
+.cgl{width:100%;font-size:8px;text-transform:uppercase;letter-spacing:.08em;color:#283848;font-family:"JetBrains Mono",monospace;margin-top:4px}
+.cb{font-size:10px;padding:3px 8px;border-radius:20px;border:2px solid transparent;cursor:pointer;background:#101b30;color:#3a6080;transition:all .12s;font-weight:500}
+.cb:hover{color:#c0d8f0;border-color:#3a5070}
+.cb.on{color:#fff!important;border-color:transparent;box-shadow:0 1px 6px rgba(0,0,0,.3);font-weight:700}
+body.light .cb{background:#f0f4f8;color:#64748b}
+body.light .cb:hover{background:#e2e8f0}
+body.light .cb.on{color:#fff!important;border-color:transparent;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.lcnt{font-size:10px;color:#283848;padding:4px 9px;font-family:"JetBrains Mono",monospace;flex-shrink:0}
+.ll{flex:1;overflow-y:auto;padding:3px 5px 10px;min-height:0}
+.li{display:flex;align-items:center;gap:6px;padding:6px 4px;border-radius:8px;border:1px solid transparent;cursor:grab;transition:all .12s}
+.li:hover{background:#101b30;border-color:#1c2b44}
+.liico{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:#080f1e}
+.liname{font-size:11.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#b8d0e8}
+.lisub{font-size:9.5px;color:#3a5070;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li48v{font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;background:rgba(14,165,233,.12);color:#38bdf8;margin-top:1px;display:inline-block}
+.liacts{display:flex;gap:2px;opacity:0;transition:opacity .12s;flex-shrink:0}
+.li:hover .liacts{opacity:1}
+.lab{width:23px;height:23px;border-radius:5px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;background:transparent;transition:all .12s}
+.fb{color:#3a5070}.fb:hover,.fb.on{color:#fbbf24}
+.ab{background:#0891b2;color:#fff;font-size:14px}.ab:hover{background:#0e7490}
+body.light .li:hover{background:#f4f7fb;border-color:#dde3ef}
+body.light .liname{color:#1e293b}
+body.light .liico{background:#f0f4f8}
+
+/* ── Props ── */
+#ps{flex:1;overflow-y:auto;padding:11px}
+.ep{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:7px;color:#151f35;text-align:center;padding:20px}
+.st{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#283848;font-family:"JetBrains Mono",monospace;margin-bottom:5px;margin-top:3px}
+.pc{border-radius:8px;border:1px solid #151f35;background:#101b30;padding:9px;margin-bottom:9px}
+body.light .pc{background:#f4f7fb;border-color:#dde3ef}
+.prow{display:flex;justify-content:space-between;gap:8px;font-size:11px;padding:2px 0}
+.prow .k{color:#3a5070}.prow .v{color:#7a98b8;text-align:right}
+.prow .v.req{color:#f59e0b;font-weight:700}.prow .v.ok{color:#34d399}
+.prl{border-radius:8px;border:1px solid #151f35;overflow:hidden;margin-bottom:9px}
+.pri{font-size:11px;padding:5px 9px;border-top:1px solid #151f35;color:#4a6a88;display:flex;gap:5px}
+.pri:first-child{border-top:none}
+.ci{display:flex;align-items:center;gap:5px;font-size:11px;padding:3px 6px;border-radius:6px;background:#101b30;margin-bottom:3px}
+body.light .prl,.body.light .ci{border-color:#dde3ef}
+body.light .ci{background:#f0f4f8}
+.bsec{font-size:9px;text-transform:uppercase;letter-spacing:.1em;font-family:"JetBrains Mono",monospace;color:#f59e0b;margin-bottom:4px}
+.berr{font-size:9px;text-transform:uppercase;letter-spacing:.1em;font-family:"JetBrains Mono",monospace;color:#ef4444;margin-bottom:4px}
+#prsec{flex-shrink:0;border-top:1px solid #151f35;padding:7px}
+.pri2{display:flex;align-items:center;font-size:11px;padding:3px 5px;border-radius:5px;cursor:pointer;color:#3a6080;gap:4px}
+.pri2:hover{background:#101b30;color:#a0c0e0}
+.prdel{background:none;border:none;color:#283848;cursor:pointer;font-size:10px;margin-left:auto}
+.prdel:hover{color:#fca5a5}
+
+/* ── Modal ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:90;display:flex;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(4px)}
+.mod{background:#101b30;border:1px solid #1c2b44;border-radius:13px;width:100%;max-width:450px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+body.light .mod{background:#fff;border-color:#dde3ef}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:12px 15px;border-bottom:1px solid #151f35;flex-shrink:0}
+.mtt{font-size:13.5px;font-weight:600}
+.mcl{width:25px;height:25px;border-radius:5px;border:none;background:transparent;color:#3a6080;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.mcl:hover{background:#1c2b44}
+.mb{flex:1;overflow-y:auto;padding:13px}
+.mf{display:flex;gap:7px;padding:11px 15px;border-top:1px solid #151f35;flex-shrink:0}
+body.light .mh,.body.light .mf{border-color:#e2e8f0}
+.fi{margin-bottom:10px}
+.fl{font-size:11px;color:#3a6080;margin-bottom:3px;display:block}
+.fin{width:100%;padding:7px 9px;border-radius:7px;border:1px solid #1c2b44;background:#080f1e;color:#d8e8f8;font-size:12.5px;transition:border-color .12s}
+.fin:focus{border-color:#0891b2}
+body.light .fin{background:#f4f7fb;border-color:#dde3ef;color:#0f172a}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mbb{flex:1;padding:8px;border-radius:8px;border:1px solid #1c2b44;background:transparent;color:#b0c8e0;cursor:pointer;font-size:13px;font-weight:500;transition:all .12s}
+.mbb:hover{background:#1c2b44}
+.mbb.pr{background:#0891b2;border-color:#0891b2;color:#fff}
+.mbb.pr:hover{background:#0e7490}
+
+/* ── Toasts ── */
+#ts{position:fixed;top:11px;right:11px;z-index:100;display:flex;flex-direction:column;gap:5px;pointer-events:none;max-width:275px}
+.toast{display:flex;align-items:flex-start;gap:7px;padding:8px 12px;border-radius:9px;border:1px solid;font-size:12px;font-weight:500;pointer-events:auto;animation:tI .25s cubic-bezier(.34,1.56,.64,1) both;line-height:1.4}
+.toast.out{animation:tO .2s ease both}
+.toast.info{background:#0a1c36;border-color:#1c3258;color:#88a8d0}
+.toast.ok{background:#052f1c;border-color:#074d2c;color:#6ee7b7}
+.toast.warn{background:#2a1800;border-color:#603600;color:#fde68a}
+.toast.err{background:#2a0808;border-color:#7f1d1d;color:#fca5a5}
+@keyframes tI{from{opacity:0;transform:translateX(110%)}to{opacity:1;transform:translateX(0)}}
+@keyframes tO{from{opacity:1}to{opacity:0;transform:translateX(110%)}}
+
+/* ── Canvas overlays ── */
+#leg{position:absolute;bottom:11px;left:11px;z-index:12;background:rgba(8,15,30,.93);border:1px solid #151f35;border-radius:9px;padding:7px 10px;backdrop-filter:blur(6px)}
+body.light #leg{background:rgba(255,255,255,.96);border-color:#dde3ef}
+.lt{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#283848;font-family:"JetBrains Mono",monospace;margin-bottom:4px}
+.lr{display:flex;align-items:center;gap:5px;margin-bottom:2px;font-size:9.5px;color:#3a5070}
+.ll2{width:16px;height:2px;border-radius:1px}
+#chip{position:absolute;top:7px;left:50%;transform:translateX(-50%);z-index:12;background:rgba(8,15,30,.88);border:1px solid #151f35;border-radius:20px;padding:3px 11px;font-size:10px;color:#3a5070;pointer-events:none;white-space:nowrap}
+body.light #chip{background:rgba(255,255,255,.9)}
+#emp{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#151f35;text-align:center;pointer-events:none;gap:5px}
+.ei{font-size:50px;opacity:.3}.et{font-size:14px;font-weight:600;opacity:.4}.es{font-size:11.5px;opacity:.28;max-width:250px;line-height:1.5}
+body.light #emp{color:#94a3b8}
+
+/* ── Mobile ── */
+/* Bottom nav bar replaces mbar on mobile */
+#mbar{display:none}
+#mob-nav{
+  display:none;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  z-index:9999;
+  background:#ffffff;
+  border-top:1.5px solid #e2e8f0;
+  padding:6px 4px;
+  padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));
+  gap:0;
+  /* Force always visible — no transform, no translate */
+  transform:none!important;
+  will-change:auto;
+  /* Prevent iOS scroll from hiding it */
+  -webkit-transform:translateZ(0);
+}
+body:not(.light) #mob-nav{background:#0c1428;border-top-color:#1e2d48}
+.mnav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 2px 4px;
+  border:none;background:transparent;cursor:pointer;
+  color:#64748b;
+  font-size:10px;font-weight:600;letter-spacing:.02em;
+  transition:color .15s;
+  min-width:0;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  /* Prevent any transform from hiding buttons */
+  transform:none;
+}
+.mnav-btn .mni{font-size:22px;line-height:1.1;display:block}
+.mnav-btn:active{opacity:.7}
+.mnav-btn.on{color:#0891b2}
+.mnav-btn.red-act{color:#ef4444}
+body:not(.light) .mnav-btn{color:#6080a0}
+body:not(.light) .mnav-btn.on{color:#06b6d4}
+
+/* Mobile canvas: full screen with bottom nav */
+@media(max-width:767px){
+  #lp,#rp,.ptb{display:none!important}
+  #mob-nav{display:flex!important}
+  #conn-banner{top:56px!important}
+  #cw{padding-bottom:0}
+  #cv{padding-bottom:80px;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  /* Bigger nodes on touch */
+  .node{min-width:168px;max-width:215px}
+  .nhd{padding:9px 10px 5px}
+  .nico{font-size:20px}
+  .nlbl{font-size:13px}
+  .ndel{width:32px;height:32px;font-size:14px;border-radius:8px}
+  .nports{padding:4px 8px 9px;gap:1px}
+  .pr{padding:6px 4px;border-radius:8px;min-height:32px}
+  .pd{width:16px;height:16px;border-width:3px}
+  .pr{min-height:48px;padding:8px 6px;border-radius:10px;gap:8px}
+  .plbl{font-size:12px;max-width:140px}
+  .ptyp{font-size:9px;padding:2px 5px}
+  .plbl{font-size:11px;max-width:130px}
+  .ptyp{font-size:8.5px;padding:2px 4px}
+  /* Header */
+  #hdr{height:50px;padding:0 12px}
+  .btn{padding:7px 10px;font-size:13px}
+}
+
+/* Slide panels — full screen on mobile */
+.mov{display:none;position:fixed;inset:0;z-index:60}
+.mov.open{display:flex}
+.mbk{position:absolute;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px)}
+.mpn{position:relative;height:100%;display:flex;flex-direction:column;background:#fff;border-right:1px solid #e2e8f0;width:min(340px,93vw)}
+body:not(.light) .mpn{background:#0c1428;border-color:#151f35}
+.mpn.r{margin-left:auto;border-right:none;border-left:1px solid #e2e8f0}
+body:not(.light) .mpn.r{border-color:#151f35}
+.mpn-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 14px 12px;border-bottom:1px solid #e2e8f0;flex-shrink:0}
+body:not(.light) .mpn-hdr{border-color:#151f35}
+.mpn-title{font-size:15px;font-weight:700}
+.mpn-cls{width:34px;height:34px;border-radius:8px;border:none;background:#f1f5f9;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+body:not(.light) .mpn-cls{background:#1c2b44;color:#e2e8f0}
+/* Library items bigger on mobile */
+@media(max-width:767px){
+  .li{padding:10px 6px;border-radius:10px}
+  .liico{width:40px;height:40px;font-size:18px;border-radius:9px}
+  .liname{font-size:13px}
+  .lisub{font-size:11px}
+  .lab{width:34px;height:34px;font-size:16px;border-radius:8px}
+  .liacts{opacity:1} /* always visible on touch */
+  .sw input{padding:10px 28px;font-size:13px;border-radius:10px}
+  .cb{font-size:13px;padding:5px 10px}
+}
+
+/* Desktop panel toggles */
+.ptb{position:absolute;top:50%;transform:translateY(-50%);width:13px;height:38px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #e2e8f0;cursor:pointer;font-size:10px;color:#94a3b8;z-index:20}
+body:not(.light) .ptb{background:#0c1428;border-color:#151f35;color:#283848}
+.ptb:hover{color:#0891b2}
+.ptb.l{border-radius:0 6px 6px 0;left:266px}
+.ptb.r{border-radius:6px 0 0 6px;right:266px}
+@media(max-width:767px){.ptb{display:none!important}}
+@media(min-width:768px){.mov{display:none!important}}
+
+@media print{#hdr,#lp,#rp,#ts,#leg,.ndel,#mob-nav,.ptb{display:none!important}#cv{background:white!important;background-image:none!important;padding-bottom:0!important}body{background:white}}
+mark{background:rgba(6,182,212,.25);color:inherit;border-radius:2px;padding:0 2px}
+body.dragging *{user-select:none!important;cursor:grabbing!important}
+.tag{display:inline-block;font-size:8px;font-weight:600;padding:1px 4px;border-radius:3px;background:#0a1424;color:#3a5070;margin:1px}
+body.light .tag{background:#eef2f8;color:#8899bb}
+
+.more-item{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;border:none;background:transparent;cursor:pointer;font-size:15px;font-weight:500;color:#1e293b;text-align:left;border-top:1px solid #e2e8f0;touch-action:manipulation;-webkit-tap-highlight-color:transparent;min-height:54px}
+.more-item span{font-size:20px;width:26px;text-align:center;flex-shrink:0}
+.more-item:active{background:#f1f5f9}
+.more-item.red-act{color:#ef4444}
+body:not(.light) #moreMenu{background:#0c1428;border-color:#151f35;box-shadow:0 -4px 24px rgba(0,0,0,.3)}
+body:not(.light) .more-item{color:#dde8f5;border-color:#151f35}
+body:not(.light) .more-item:hover{background:#151f35}
+body:not(.light) #mSrch{background:#101b30;border-color:#1c2b44;color:#dde8f5}
+
+#zoom-bar{position:absolute;bottom:16px;right:12px;z-index:13;display:flex;flex-direction:row;gap:3px;background:rgba(248,250,252,.95);border:1px solid #e2e8f0;border-radius:10px;padding:3px;backdrop-filter:blur(4px)}
+body:not(.light) #zoom-bar{background:rgba(12,20,40,.95);border-color:#1c2b44}
+#zoom-bar button{width:32px;height:32px;border-radius:7px;border:none;background:transparent;color:#64748b;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s;touch-action:manipulation;line-height:1;font-weight:600}
+#zoom-bar button:hover{background:#f1f5f9;color:#0891b2}
+#zoom-bar button:active{transform:scale(.88)}
+body:not(.light) #zoom-bar button{color:#7090b0}
+body:not(.light) #zoom-bar button:hover{background:#1c2b44;color:#06b6d4}
+@media(max-width:767px){
+  #zoom-bar{bottom:calc(80px + env(safe-area-inset-bottom) + 8px);right:10px;padding:2px;gap:2px}
+  #zoom-bar button{width:36px;height:36px;font-size:18px}
+}
+
+/* ── Minimap ── */
+#minimap{position:absolute;top:12px;right:12px;z-index:13;width:130px;height:80px;border-radius:9px;border:1px solid #e2e8f0;background:rgba(248,250,252,.95);overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.1);cursor:pointer;backdrop-filter:blur(4px)}
+body:not(.light) #minimap{background:rgba(16,27,48,.95);border-color:#1c2b44}
+#minimap canvas{position:absolute;inset:0;width:100%;height:100%}
+#minimap-vp{position:absolute;border:2px solid #0891b2;border-radius:2px;background:rgba(8,145,178,.1);pointer-events:none}
+#minimap-title{position:absolute;bottom:3px;right:5px;font-size:7.5px;font-family:'JetBrains Mono',monospace;color:#94a3b8;letter-spacing:.04em;pointer-events:none}
+#minimap-fit{position:absolute;top:3px;right:4px;background:none;border:none;font-size:11px;cursor:pointer;color:#94a3b8;padding:1px 3px;border-radius:3px;line-height:1}
+#minimap-fit:hover{background:#e2e8f0;color:#0891b2}
+@media(max-width:767px){
+  #minimap{width:100px;height:64px;top:10px;right:10px}
+  #zoom-bar{bottom:calc(80px + env(safe-area-inset-bottom) + 8px);right:10px}
+}
+/* ── Search clear btn always visible ── */
+#sCl{display:flex!important;opacity:0;pointer-events:none;transition:opacity .15s}
+#sCl.vis{opacity:1;pointer-events:auto}
+/* ── Canvas locked indicator ── */
+#lock-badge{display:none;position:absolute;top:8px;right:12px;z-index:13;background:#0891b2;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;gap:5px;align-items:center}
+#lock-badge.show{display:flex}
+
+/* ── Documentation panel ── */
+#doc-ov{display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);backdrop-filter:blur(4px)}
+#doc-ov.open{display:flex;align-items:flex-start;justify-content:center;padding:16px}
+#doc-panel{position:relative;background:#fff;border-radius:16px;width:100%;max-width:780px;max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+body:not(.light) #doc-panel{background:#0e1928;border:1px solid #1c2b44}
+#doc-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #e2e8f0;flex-shrink:0;gap:12px}
+body:not(.light) #doc-hdr{border-color:#1c2b44}
+#doc-title{font-family:Syne,sans-serif;font-size:16px;font-weight:800;color:#0891b2}
+#doc-search-wrap{flex:1;max-width:260px;position:relative}
+#doc-search{width:100%;padding:6px 10px 6px 28px;border-radius:20px;border:1px solid #e2e8f0;background:#f8fafc;font-size:12px;color:#1e293b}
+body:not(.light) #doc-search{background:#151f35;border-color:#1c2b44;color:#dde8f5}
+#doc-search-ic{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:#94a3b8;pointer-events:none}
+#doc-cls{width:32px;height:32px;border-radius:8px;border:none;background:#f1f5f9;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#64748b}
+#doc-cls:hover{background:#e2e8f0}
+body:not(.light) #doc-cls{background:#1c2b44;color:#8899bb}
+#doc-body{display:flex;flex:1;overflow:hidden;min-height:0}
+#doc-toc{width:200px;flex-shrink:0;border-right:1px solid #e2e8f0;overflow-y:auto;padding:10px 0;display:none}
+body:not(.light) #doc-toc{border-color:#1c2b44}
+@media(min-width:640px){#doc-toc{display:block}}
+.toc-item{display:block;padding:5px 16px;font-size:11.5px;color:#64748b;cursor:pointer;border-radius:0;transition:all .1s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;border-left:2px solid transparent}
+.toc-item:hover{color:#0891b2;background:#f0f9ff}
+.toc-item.active{color:#0891b2;border-left-color:#0891b2;background:#f0f9ff;font-weight:600}
+body:not(.light) .toc-item:hover,.body:not(.light) .toc-item.active{background:rgba(8,145,178,.1)}
+#doc-content{flex:1;overflow-y:auto;padding:20px 24px;min-width:0}
+
+/* Doc content styles */
+#doc-content h1{font-family:Syne,sans-serif;font-size:20px;font-weight:800;color:#0891b2;margin-bottom:4px}
+#doc-content h2{font-size:15px;font-weight:700;color:#1e293b;margin:22px 0 8px;padding-top:4px;border-bottom:1px solid #e2e8f0;padding-bottom:6px}
+body:not(.light) #doc-content h2{color:#dde8f5;border-color:#1c2b44}
+#doc-content h3{font-size:13px;font-weight:700;color:#0891b2;margin:14px 0 6px}
+#doc-content p{font-size:12.5px;line-height:1.7;color:#475569;margin-bottom:6px}
+body:not(.light) #doc-content p{color:#8899bb}
+#doc-content ul{padding-left:18px;margin-bottom:8px}
+#doc-content li{font-size:12.5px;line-height:1.7;color:#475569;margin-bottom:2px}
+body:not(.light) #doc-content li{color:#8899bb}
+#doc-content strong{color:#1e293b;font-weight:700}
+body:not(.light) #doc-content strong{color:#dde8f5}
+#doc-content code{font-family:JetBrains Mono,monospace;font-size:11px;background:#f1f5f9;padding:1px 5px;border-radius:4px;color:#0891b2}
+body:not(.light) #doc-content code{background:#151f35;color:#38bdf8}
+#doc-content pre{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;overflow-x:auto;margin:8px 0}
+body:not(.light) #doc-content pre{background:#0a1424;border-color:#1c2b44}
+#doc-content pre code{background:transparent;padding:0;color:#334155;font-size:11px;line-height:1.6}
+body:not(.light) #doc-content pre code{color:#8aa8c8}
+#doc-content blockquote{border-left:3px solid #0891b2;padding:6px 12px;margin:8px 0;background:#f0f9ff;border-radius:0 6px 6px 0}
+body:not(.light) #doc-content blockquote{background:rgba(8,145,178,.08)}
+#doc-content blockquote p{color:#0e7490;margin:0}
+#doc-content table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+#doc-content th{background:#f1f5f9;padding:6px 10px;text-align:left;font-weight:700;font-size:11px;color:#475569;border-bottom:2px solid #e2e8f0}
+body:not(.light) #doc-content th{background:#151f35;color:#8899bb;border-color:#1c2b44}
+#doc-content td{padding:6px 10px;border-bottom:1px solid #f1f5f9;color:#475569;font-size:12px;vertical-align:top}
+body:not(.light) #doc-content td{border-color:#1a2840;color:#8899bb}
+#doc-content tr:hover td{background:#f8fafc}
+body:not(.light) #doc-content tr:hover td{background:rgba(255,255,255,.02)}
+#doc-content hr{border:none;border-top:1px solid #e2e8f0;margin:16px 0}
+body:not(.light) #doc-content hr{border-color:#1c2b44}
+#doc-content a{color:#0891b2;text-decoration:none}
+#doc-content a:hover{text-decoration:underline}
+.doc-highlight{background:rgba(251,191,36,.35);border-radius:2px}
+@media(max-width:639px){
+  #doc-panel{max-height:100vh;border-radius:0}
+  #doc-ov{padding:0}
+  #doc-content{padding:14px 16px}
+  #doc-hdr{padding:12px 14px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header id="hdr">
+  <button class="btn" id="bML" style="display:none">☰</button>
+  <div style="font-family:Syne,sans-serif;font-size:15px;font-weight:800;white-space:nowrap;flex-shrink:0"><span style="color:#06b6d4">Syn</span>Optic <span style="font-size:9px;color:#1c2b44;font-family:JetBrains Mono,monospace">AV PRO v3</span></div>
+  <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+    <button class="btn on" id="bSel" title="Sélection (S)">↖ Sélect.</button>
+
+    <div style="width:1px;height:17px;background:#151f35;margin:0 2px"></div>
+    <button class="btn" id="bUnd" title="Annuler Ctrl+Z">↩</button>
+    <button class="btn" id="bLeg">🗺</button>
+  </div>
+  <div style="flex:1"></div>
+  <div style="display:flex;align-items:center;gap:3px">
+    <button class="btn" id="bPS">💾 Preset</button>
+    <button class="btn" id="bExp">⬇ JSON</button>
+    <button class="btn" id="bPDF">🖨</button>
+    <button class="btn red" id="bClr">🗑</button>
+    <button class="btn" id="bDoc" title="Documentation">📖</button>
+    <button class="btn" id="bTh">☀</button>
+    <button class="btn" id="bMP" style="display:none">⚙</button>
+  </div>
+</header>
+<div id="body">
+  <aside id="lp">
+    <div class="ph">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#283848;font-family:JetBrains Mono,monospace">Bibliothèque</span>
+        <div style="display:flex;gap:3px">
+          <button class="lab fb" id="bFav" style="opacity:1;width:auto;padding:2px 6px;border-radius:5px;font-size:11px;background:#101b30;border:1px solid #151f35">★ <span id="fCnt">0</span></button>
+          <button class="btn" id="bAdd" style="padding:2px 6px;font-size:11px;background:rgba(6,182,212,.08);border-color:transparent;color:#22d3ee">+ Ajouter</button>
+        </div>
+      </div>
+      <div class="sw"><span class="si">🔍</span><input id="srch" type="text" placeholder="SM58, DI, Dante, K12…" autocomplete="off" autocorrect="off" spellcheck="false"><button class="sc" id="sCl" aria-label="Effacer">✕</button></div>
+      <div class="cats" id="cats"></div>
+    </div>
+    <div class="lcnt" id="lcnt"></div>
+    <div class="ll" id="ll"></div>
+  </aside>
+  <button class="ptb l" id="ptL">‹</button>
+  <button class="ptb r" id="ptR">›</button>
+  <main id="cw">
+    <div id="mbar"></div><!-- desktop only: hidden on mobile -->
+    <div id="cv">
+<div id="stage"><svg id="sl" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="axlr"   markerWidth="7" markerHeight="5" refX="6.5" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#06b6d4" opacity=".9"/></marker>
+          <marker id="ajack"  markerWidth="7" markerHeight="5" refX="6.5" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#f97316" opacity=".9"/></marker>
+          <marker id="aspk"   markerWidth="7" markerHeight="5" refX="6.5" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#eab308" opacity=".9"/></marker>
+          <marker id="adante" markerWidth="7" markerHeight="5" refX="6.5" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#a855f7" opacity=".9"/></marker>
+          <marker id="aaes50" markerWidth="7" markerHeight="5" refX="6.5" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#c084fc" opacity=".9"/></marker>
+          <marker id="amadi"  markerWidth="7" markerHeight="5" refX="6.5" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#818cf8" opacity=".9"/></marker>
+          <marker id="ahdmi"  markerWidth="7" markerHeight="5" refX="6.5" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#ec4899" opacity=".9"/></marker>
+          <marker id="arca"   markerWidth="7" markerHeight="5" refX="6.5" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#22c55e" opacity=".9"/></marker>
+          <marker id="adef"   markerWidth="7" markerHeight="5" refX="6.5" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#475569" opacity=".9"/></marker>
+        </defs>
+      </svg><div id="nl"></div></div>
+      <div id="emp"><div class="ei">🎛</div><div class="et">Canvas vide</div><div class="es">Glissez un équipement depuis la bibliothèque pour commencer</div></div>
+      <div id="chip" style="display:none"></div>
+      <div id="minimap" title="Cliquer pour tout afficher"><canvas id="minimap-nodes"></canvas><div id="minimap-vp"></div><div id="minimap-title">⊡ tout voir</div></div>
+      <div id="lock-badge">🔒 Défilement verrouillé</div>
+      <div id="conn-banner" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:20;pointer-events:none;text-align:center;white-space:nowrap">
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(8,145,178,.95);color:#fff;padding:7px 12px 7px 14px;border-radius:24px;font-size:12px;font-weight:600;box-shadow:0 2px 12px rgba(8,145,178,.4);pointer-events:auto">
+          <span>⚡ Glissez jusqu'à un port compatible ou touchez-en un</span>
+          <button id="conn-cancel" style="margin-left:4px;padding:3px 10px;border-radius:20px;border:1.5px solid rgba(255,255,255,.7);background:transparent;color:#fff;font-weight:700;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation">✕</button>
+        </div>
+      </div>
+      <div id="leg">
+        <div class="lt">Câbles</div>
+        <div class="lr"><div class="ll2" style="background:#06b6d4"></div>XLR micro/ligne</div>
+        <div class="lr"><div class="ll2" style="background:#f97316"></div>Jack 6.35</div>
+        <div class="lr"><div class="ll2" style="background:#eab308"></div>Speakon NL4</div>
+        <div class="lr"><div class="ll2" style="background:#a855f7"></div>Dante</div>
+        <div class="lr"><div class="ll2" style="background:#c084fc"></div>AES50</div>
+        <div class="lr"><div class="ll2" style="background:#818cf8"></div>MADI</div>
+        <div class="lr"><div class="ll2" style="background:#ec4899"></div>HDMI</div>
+        <div class="lr"><div class="ll2" style="background:#22c55e"></div>RCA</div>
+        <div class="lr"><div class="ll2" style="background:#6366f1"></div>SDI</div>
+        <div class="lr"><div class="ll2" style="background:#4f46e5"></div>NDI</div>
+        <div class="lr"><div class="ll2" style="background:#f59e0b"></div>USB / USB-C</div>
+        <div class="lr"><div class="ll2" style="background:#10b981"></div>Ethernet</div>
+        <div class="lr"><div class="ll2" style="background:#ef4444"></div>Tally</div>
+      </div>
+    </div>
+  </main>
+  <aside id="rp">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #151f35;flex-shrink:0">
+      <span style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#283848;font-family:JetBrains Mono,monospace">Propriétés</span>
+      <button class="btn" id="bEdit" style="display:none;padding:2px 6px;font-size:11px">✏ Modifier</button>
+    </div>
+    <div id="ps"><div class="ep"><div style="font-size:36px;opacity:.2">🎛</div><div style="font-size:11.5px;color:#283848;margin-top:4px">Sélectionnez un élément</div></div></div>
+    <div id="prsec" style="display:none">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#283848;font-family:JetBrains Mono,monospace;margin-bottom:3px">Presets sauvegardés</div>
+      <div id="prList"></div>
+    </div>
+  </aside>
+</div></div>
+
+<!-- Mobile bottom navigation -->
+<nav id="mob-nav">
+  <button class="mnav-btn on" id="mbSel"><span class="mni">↖</span>Sélect.</button>
+
+  <button class="mnav-btn" id="mbLib"><span class="mni">📚</span>Biblio.</button>
+  <button class="mnav-btn" id="mbPr"><span class="mni">⚙</span>Infos</button>
+  <button class="mnav-btn" id="mbUnd"><span class="mni">↩</span>Annuler</button>
+  <button class="mnav-btn" id="mbMore"><span class="mni">•••</span>Plus</button>
+</nav>
+
+<!-- Mobile Library panel -->
+<div class="mov" id="movLib">
+  <div class="mbk" id="mbkL"></div>
+  <div class="mpn">
+    <div class="mpn-hdr">
+      <span class="mpn-title">📚 Bibliothèque</span>
+      <button class="mpn-cls" id="mLibCl">✕</button>
+    </div>
+    <div style="padding:10px 10px 6px;flex-shrink:0">
+      <div style="position:relative;margin-bottom:8px">
+        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:14px;pointer-events:none">🔍</span>
+        <input id="mSrch" type="text" placeholder="SM58, DI, Dante…" autocomplete="off" autocorrect="off" spellcheck="false" style="width:100%;padding:10px 36px 10px 32px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;font-size:13px;color:#0f172a"><button id="mSCl" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:14px;color:#94a3b8;cursor:pointer;padding:4px;display:none">✕</button>
+      </div>
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px" id="mCatBar"></div>
+    </div>
+    <div class="lcnt" id="mLcnt" style="padding:2px 10px 6px"></div>
+    <div class="ll" id="mLl" style="min-height:0;padding:0 6px 10px"></div>
+  </div>
+</div>
+
+<!-- Mobile Props panel -->
+<div class="mov" id="movPr">
+  <div class="mbk" id="mbkP"></div>
+  <div class="mpn r">
+    <div class="mpn-hdr">
+      <span class="mpn-title">⚙ Propriétés</span>
+      <button class="mpn-cls" id="mPrCl">✕</button>
+    </div>
+    <div id="mPrSc" style="flex:1;overflow-y:auto;padding:12px"></div>
+  </div>
+</div>
+
+<!-- Mobile More menu -->
+<div class="mov" id="movMore">
+  <div class="mbk" id="mbkMore"></div>
+  <div style="position:absolute;bottom:calc(72px + env(safe-area-inset-bottom));left:0;right:0;background:#fff;border-radius:20px 20px 0 0;border:1px solid #e2e8f0;border-bottom:none;overflow:hidden;z-index:61;box-shadow:0 -4px 24px rgba(0,0,0,.08)" id="moreMenu">
+    <div style="display:flex;justify-content:center;padding:10px 0 4px"><div style="width:36px;height:4px;border-radius:2px;background:#e2e8f0"></div></div>
+    <div style="padding:10px 16px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em">Actions</div>
+    <button class="more-item" id="mbPS"><span>💾</span>Sauvegarder un preset</button>
+    <button class="more-item" id="mbExp"><span>⬇</span>Exporter JSON</button>
+    <button class="more-item" id="mbPDF"><span>🖨</span>Imprimer / PDF</button>
+    <button class="more-item" id="mbLeg"><span>🗺</span>Afficher/masquer légende</button>
+    <button class="more-item" id="mbDoc"><span>📖</span>Documentation</button>
+    <button class="more-item" id="mbTh"><span>🌗</span>Changer le thème</button>
+    <button class="more-item red-act" id="mbClr"><span>🗑</span>Effacer le canvas</button>
+  </div>
+</div>
+<div id="ts"></div><div id="mr"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// SIGNAL FLOW ENGINE — AV compatibility matrix
+// ═══════════════════════════════════════════════════
+const PT={
+  XLR_M:"xm",XLR_F:"xf",
+  JACK_TS:"jts",JACK_TRS:"jtrs",JACK_IN:"ji",
+  SPEAKON:"spk",SPEAKON_IN:"spki",
+  DANTE_OUT:"do",DANTE_IN:"di",
+  AES50_OUT:"ao",AES50_IN:"ai",
+  MADI_OUT:"mo",MADI_IN:"mi",
+  HDMI_OUT:"ho",HDMI_IN:"hi",
+  RCA_OUT:"ro",RCA_IN:"ri",
+  // Streaming
+  USB_OUT:"usbo",USB_IN:"usbi",
+  USBC_OUT:"usbco",USBC_IN:"usbci",
+  SDI_OUT:"sdo",SDI_IN:"sdi",
+  NDI_OUT:"ndio",NDI_IN:"ndii",
+  DP_OUT:"dpo",DP_IN:"dpi",
+  ETH_OUT:"etho",ETH_IN:"ethi",
+  TALLY_OUT:"talo",TALLY_IN:"tali",
+};
+// What output types can drive what input types (physically)
+const COMPAT={
+  [PT.XLR_M]:[PT.XLR_F],
+  [PT.JACK_TS]:[PT.JACK_IN],
+  [PT.JACK_TRS]:[PT.JACK_IN,PT.XLR_F],
+  [PT.SPEAKON]:[PT.SPEAKON_IN],
+  [PT.DANTE_OUT]:[PT.DANTE_IN],
+  [PT.AES50_OUT]:[PT.AES50_IN],
+  [PT.MADI_OUT]:[PT.MADI_IN],
+  [PT.HDMI_OUT]:[PT.HDMI_IN,PT.DP_IN],
+  [PT.RCA_OUT]:[PT.RCA_IN],
+  [PT.USB_OUT]:[PT.USB_IN],
+  [PT.USBC_OUT]:[PT.USBC_IN,PT.USB_IN],
+  [PT.SDI_OUT]:[PT.SDI_IN],
+  [PT.NDI_OUT]:[PT.NDI_IN,PT.ETH_IN],
+  [PT.DP_OUT]:[PT.DP_IN,PT.HDMI_IN],
+  [PT.ETH_OUT]:[PT.ETH_IN,PT.NDI_IN],
+  [PT.TALLY_OUT]:[PT.TALLY_IN],
+};
+function canConn(o,i){return(COMPAT[o]||[]).includes(i)}
+const CABLES={
+  xlr:{l:"XLR",c:"#06b6d4",m:"axlr"},
+  jack:{l:"Jack 6.35",c:"#f97316",m:"ajack"},
+  speakon:{l:"Speakon NL4",c:"#eab308",m:"aspk"},
+  dante:{l:"Dante",c:"#a855f7",m:"adante"},
+  aes50:{l:"AES50",c:"#c084fc",m:"aaes50"},
+  madi:{l:"MADI",c:"#818cf8",m:"amadi"},
+  hdmi:{l:"HDMI",c:"#ec4899",m:"ahdmi"},
+  rca:{l:"RCA",c:"#22c55e",m:"arca"},
+  sdi:{l:"SDI",c:"#6366f1",m:"asdi"},
+  ndi:{l:"NDI (réseau)",c:"#4f46e5",m:"andi"},
+  dp:{l:"DisplayPort",c:"#0ea5e9",m:"adp"},
+  eth:{l:"Ethernet",c:"#10b981",m:"aeth"},
+  tally:{l:"Tally",c:"#ef4444",m:"atally"},
+  usb:{l:"USB",c:"#f59e0b",m:"ausb"},
+  usbc:{l:"USB-C",c:"#f59e0b",m:"ausb"},
+  def:{l:"?",c:"#475569",m:"adef"}
+};
+function cableType(o,i){
+  if(o===PT.XLR_M&&i===PT.XLR_F)return"xlr";
+  if((o===PT.JACK_TS||o===PT.JACK_TRS)&&i===PT.JACK_IN)return"jack";
+  if(o===PT.JACK_TRS&&i===PT.XLR_F)return"xlr";
+  if(o===PT.SPEAKON&&i===PT.SPEAKON_IN)return"speakon";
+  if(o===PT.DANTE_OUT&&i===PT.DANTE_IN)return"dante";
+  if(o===PT.AES50_OUT&&i===PT.AES50_IN)return"aes50";
+  if(o===PT.MADI_OUT&&i===PT.MADI_IN)return"madi";
+  if(o===PT.HDMI_OUT&&i===PT.HDMI_IN)return"hdmi";
+  if(o===PT.RCA_OUT&&i===PT.RCA_IN)return"rca";
+  if(o===PT.USB_OUT&&i===PT.USB_IN)return"usb";
+  if(o===PT.USBC_OUT)return"usbc";
+  if(o===PT.SDI_OUT&&i===PT.SDI_IN)return"sdi";
+  if(o===PT.NDI_OUT)return"ndi";
+  if(o===PT.DP_OUT)return"dp";
+  if(o===PT.ETH_OUT)return"eth";
+  if(o===PT.TALLY_OUT&&i===PT.TALLY_IN)return"tally";
+  return"def";
+}
+const PC={
+  [PT.XLR_M]:"#06b6d4",[PT.XLR_F]:"#06b6d4",
+  [PT.JACK_TS]:"#f97316",[PT.JACK_TRS]:"#fb923c",[PT.JACK_IN]:"#f97316",
+  [PT.SPEAKON]:"#eab308",[PT.SPEAKON_IN]:"#eab308",
+  [PT.DANTE_OUT]:"#a855f7",[PT.DANTE_IN]:"#a855f7",
+  [PT.AES50_OUT]:"#c084fc",[PT.AES50_IN]:"#c084fc",
+  [PT.MADI_OUT]:"#818cf8",[PT.MADI_IN]:"#818cf8",
+  [PT.HDMI_OUT]:"#ec4899",[PT.HDMI_IN]:"#ec4899",
+  [PT.RCA_OUT]:"#22c55e",[PT.RCA_IN]:"#22c55e",
+  [PT.USB_OUT]:"#f59e0b",[PT.USB_IN]:"#f59e0b",
+  [PT.USBC_OUT]:"#f59e0b",[PT.USBC_IN]:"#f59e0b",
+  [PT.SDI_OUT]:"#6366f1",[PT.SDI_IN]:"#6366f1",
+  [PT.NDI_OUT]:"#4f46e5",[PT.NDI_IN]:"#4f46e5",
+  [PT.DP_OUT]:"#0ea5e9",[PT.DP_IN]:"#0ea5e9",
+  [PT.ETH_OUT]:"#10b981",[PT.ETH_IN]:"#10b981",
+  [PT.TALLY_OUT]:"#ef4444",[PT.TALLY_IN]:"#ef4444",
+};
+const PL={
+  [PT.XLR_M]:"XLR▶",[PT.XLR_F]:"◀XLR",
+  [PT.JACK_TS]:"TS▶",[PT.JACK_TRS]:"TRS▶",[PT.JACK_IN]:"◀Jack",
+  [PT.SPEAKON]:"Spk▶",[PT.SPEAKON_IN]:"◀Spk",
+  [PT.DANTE_OUT]:"Dante▶",[PT.DANTE_IN]:"◀Dante",
+  [PT.AES50_OUT]:"AES50▶",[PT.AES50_IN]:"◀AES50",
+  [PT.MADI_OUT]:"MADI▶",[PT.MADI_IN]:"◀MADI",
+  [PT.HDMI_OUT]:"HDMI▶",[PT.HDMI_IN]:"◀HDMI",
+  [PT.RCA_OUT]:"RCA▶",[PT.RCA_IN]:"◀RCA",
+  [PT.USB_OUT]:"USB▶",[PT.USB_IN]:"◀USB",
+  [PT.USBC_OUT]:"USB-C▶",[PT.USBC_IN]:"◀USB-C",
+  [PT.SDI_OUT]:"SDI▶",[PT.SDI_IN]:"◀SDI",
+  [PT.NDI_OUT]:"NDI▶",[PT.NDI_IN]:"◀NDI",
+  [PT.DP_OUT]:"DP▶",[PT.DP_IN]:"◀DP",
+  [PT.ETH_OUT]:"ETH▶",[PT.ETH_IN]:"◀ETH",
+  [PT.TALLY_OUT]:"Tally▶",[PT.TALLY_IN]:"◀Tally",
+};
+function ptc(t){return PC[t]||"#475569"}
+function ptl(t){return PL[t]||"?"}
+
+function nodeWarns(node,nodes,wires){
+  const item=allI().find(i=>i.id===node.itemId)||{};const w=[];
+  if(item.cat==="mic_ribbon"){
+    const hasConsole=wires.some(x=>(x.toNode===node.id||x.fromNode===node.id)&&(()=>{
+      const othId=x.toNode===node.id?x.fromNode:x.toNode;
+      const oth=nodes.find(n=>n.id===othId);
+      return oth&&(oth.cat==="mixer_digital"||oth.cat==="mixer_analog");
+    })());
+    if(hasConsole)w.push({lv:"warn",msg:"⚠ Vérifiez que le Phantom 48V est OFF sur cette voie — un ruban s'y détruit !"});
+  }
+  if(item.cat==="instrument_string"||item.cat==="instrument_keys"){
+    const directMixer=wires.filter(x=>x.fromNode===node.id).some(x=>{
+      const t=nodes.find(n=>n.id===x.toNode);
+      return t&&(t.cat==="mixer_digital"||t.cat==="mixer_analog");
+    });
+    if(directMixer)w.push({lv:"warn",msg:"⚠ Jack instrument → console directement : risque de bruit de masse. Utilisez une DI."});
+  }
+  return w;
+}
+
+// ═══════════════════════════════════════════════════
+// CATEGORIES
+// ═══════════════════════════════════════════════════
+const CATS={
+  mic_dynamic:{label:"Micros dynamiques",icon:"🎤",color:"#06b6d4",group:"Sources"},
+  mic_condenser:{label:"Condensateurs",icon:"🎙",color:"#38bdf8",group:"Sources"},
+  mic_ribbon:{label:"Micros ruban",icon:"🎙",color:"#7dd3fc",group:"Sources"},
+  mic_wireless:{label:"Micros HF",icon:"📡",color:"#0ea5e9",group:"Sources"},
+  mic_lavalier:{label:"Cravate / Miniature",icon:"🔬",color:"#22d3ee",group:"Sources"},
+  mic_goose:{label:"Col de cygne",icon:"🦢",color:"#67e8f9",group:"Sources"},
+  mixer_digital:{label:"Tables numériques",icon:"🎛",color:"#f97316",group:"Traitement"},
+  mixer_analog:{label:"Tables analogiques",icon:"🎚",color:"#fb923c",group:"Traitement"},
+  processor:{label:"Processeurs / EQ",icon:"⚙️",color:"#0ea5e9",group:"Traitement"},
+  interface:{label:"Interfaces audio",icon:"🖥",color:"#64748b",group:"Traitement"},
+  speaker_active:{label:"Enceintes actives",icon:"🔊",color:"#22c55e",group:"Diffusion"},
+  speaker_passive:{label:"Enceintes passives",icon:"🔈",color:"#16a34a",group:"Diffusion"},
+  subwoofer:{label:"Caissons de basse",icon:"🔉",color:"#15803d",group:"Diffusion"},
+  monitor:{label:"Retours scène",icon:"📢",color:"#34d399",group:"Diffusion"},
+  amp:{label:"Amplificateurs",icon:"⚡",color:"#eab308",group:"Amplification"},
+  di:{label:"Boîtes DI",icon:"🔌",color:"#a855f7",group:"Interface"},
+  stagebox:{label:"Stage Box",icon:"📦",color:"#c084fc",group:"Infrastructure"},
+  recorder:{label:"Enregistreurs",icon:"⏺",color:"#d946ef",group:"Capture"},
+  instrument_string:{label:"Cordes",icon:"🎸",color:"#f472b6",group:"Instruments"},
+  instrument_keys:{label:"Claviers",icon:"🎹",color:"#e879f9",group:"Instruments"},
+  instrument_wind:{label:"Vents",icon:"🎺",color:"#d946ef",group:"Instruments"},
+  instrument_perc:{label:"Percussions",icon:"🥁",color:"#c026d3",group:"Instruments"},
+  accessory:{label:"Accessoires",icon:"🛠",color:"#475569",group:"Infrastructure"},
+  video:{label:"Vidéo / Projection",icon:"📽",color:"#ef4444",group:"Vidéo"},
+  // ── Régie streaming ──
+  camera:{label:"Caméras",icon:"📷",color:"#6366f1",group:"Régie Streaming"},
+  capture:{label:"Cartes de capture",icon:"🎬",color:"#8b5cf6",group:"Régie Streaming"},
+  switcher:{label:"Mélangeurs vidéo",icon:"🎚",color:"#7c3aed",group:"Régie Streaming"},
+  encoder:{label:"Encodeurs streaming",icon:"📡",color:"#4f46e5",group:"Régie Streaming"},
+  computer:{label:"Ordinateurs / Logiciels",icon:"💻",color:"#3b82f6",group:"Régie Streaming"},
+  display:{label:"Moniteurs / Écrans régie",icon:"🖥",color:"#0ea5e9",group:"Régie Streaming"},
+  network:{label:"Réseau / Connectivité",icon:"🌐",color:"#06b6d4",group:"Régie Streaming"},
+  stream_audio:{label:"Audio streaming",icon:"🎙",color:"#10b981",group:"Régie Streaming"},
+  tally:{label:"Tally / Intercom",icon:"🔴",color:"#ef4444",group:"Régie Streaming"},
+  prompter:{label:"Prompteur / Accessoires",icon:"📋",color:"#f59e0b",group:"Régie Streaming"},
+};
+
+// ═══════════════════════════════════════════════════
+// DATABASE — 80+ items with real ports
+// ═══════════════════════════════════════════════════
+function p(id,dir,ct,lbl){return{id,dir,connType:ct,label:lbl}}
+const DB=[
+  // DYNAMIC MICS
+  {id:"sm58",cat:"mic_dynamic",name:"Shure SM58",sub:"Vocal cardioïde",icon:"🎤",phantom:false,freq:"50Hz-15kHz",desc:"Standard mondial voix live. Cardioïde.",tags:["Live","Vocal"],ports:[p("o","out",PT.XLR_M,"Sortie XLR")],prereqs:["Câble XLR","Entrée micro console","Stand microphone"]},
+  {id:"sm57",cat:"mic_dynamic",name:"Shure SM57",sub:"Instrument dynamique",icon:"🎤",phantom:false,freq:"40Hz-15kHz",desc:"Référence amplis guitare, caisse claire, cuivres.",tags:["Instrument","Ampli"],ports:[p("o","out",PT.XLR_M,"Sortie XLR")],prereqs:["Câble XLR","Pince instrument ou stand"]},
+  {id:"beta52",cat:"mic_dynamic",name:"Shure Beta 52A",sub:"Grosse caisse kick",icon:"🎤",phantom:false,desc:"Cardioïde dédié kick. Courbe présence basses.",tags:["Kick","Batterie"],ports:[p("o","out",PT.XLR_M,"Sortie XLR")],prereqs:["Câble XLR","Pince kick","Entrée micro console"]},
+  {id:"d112",cat:"mic_dynamic",name:"AKG D112 MKII",sub:"Grosse caisse référence",icon:"🎤",phantom:false,desc:"Référence absolue grosse caisse.",tags:["Kick"],ports:[p("o","out",PT.XLR_M,"Sortie XLR")],prereqs:["Câble XLR","Pince kick"]},
+  {id:"md421",cat:"mic_dynamic",name:"Sennheiser MD 421-II",sub:"Toms / polyvalent",icon:"🎤",phantom:false,desc:"Légendaire toms, guitares, cuivres.",tags:["Toms","Polyvalent"],ports:[p("o","out",PT.XLR_M,"Sortie XLR")],prereqs:["Câble XLR","Pince tom ou stand"]},
+  {id:"e906",cat:"mic_dynamic",name:"Sennheiser e906",sub:"Ampli guitare suspendu",icon:"🎤",phantom:false,desc:"3 positions EQ. Suspendu devant le cone.",tags:["Ampli","Guitare"],ports:[p("o","out",PT.XLR_M,"Sortie XLR")],prereqs:["Câble XLR","Clip suspendu ou stand"]},
+  {id:"re20",cat:"mic_dynamic",name:"EV RE20",sub:"Broadcast cardioïde variable",icon:"🎤",phantom:false,desc:"Référence broadcast. Pas d\u2019effet de proximité.",tags:["Broadcast","Radio"],ports:[p("o","out",PT.XLR_M,"Sortie XLR")],prereqs:["Câble XLR","Bras micro ou stand"]},
+  {id:"m88",cat:"mic_dynamic",name:"Beyerdynamic M88TG",sub:"Hypercardioïde kick/voix",icon:"🎤",phantom:false,desc:"Excellent kick, basse, voix grave.",tags:["Kick","Voix"],ports:[p("o","out",PT.XLR_M,"Sortie XLR")],prereqs:["Câble XLR","Stand ou pince"]},
+  // CONDENSERS
+  {id:"c414",cat:"mic_condenser",name:"AKG C414 XLS",sub:"Studio 9 polarités",icon:"🎙",phantom:true,freq:"20Hz-20kHz",desc:"9 polarités sélectionnables. Référence studio.",tags:["Studio","48V"],ports:[p("o","out",PT.XLR_M,"Sortie XLR (48V requis)")],prereqs:["Phantom 48V OBLIGATOIRE","Câble XLR qualité","Préampli transparent"]},
+  {id:"c451b",cat:"mic_condenser",name:"AKG C451B",sub:"Small-diaphragm overheads",icon:"🎙",phantom:true,desc:"Overheads batterie, hi-hat, acoustique.",tags:["Overheads","48V"],ports:[p("o","out",PT.XLR_M,"Sortie XLR (48V)")],prereqs:["Phantom 48V","Câble XLR"]},
+  {id:"nt1a",cat:"mic_condenser",name:"Rode NT1-A",sub:"Grand diaphragme 5dB(A)",icon:"🎙",phantom:true,desc:"5dB(A) bruit de fond. Voix, acoustique.",tags:["Studio","48V"],ports:[p("o","out",PT.XLR_M,"Sortie XLR (48V)")],prereqs:["Phantom 48V","Câble XLR","Environnement traité acoustiquement"]},
+  {id:"kms105",cat:"mic_condenser",name:"Neumann KMS 105",sub:"Voix live premium supercardioïde",icon:"🎙",phantom:true,desc:"Référence absolue voix live condensateur.",tags:["Premium","48V","Live"],ports:[p("o","out",PT.XLR_M,"Sortie XLR (48V)")],prereqs:["Phantom 48V","Câble XLR qualité"]},
+  {id:"sm81",cat:"mic_condenser",name:"Shure SM81",sub:"Small-diaphragm overheads",icon:"🎙",phantom:true,desc:"Très flat. Overheads, acoustiques.",tags:["Overheads","48V"],ports:[p("o","out",PT.XLR_M,"Sortie XLR (48V)")],prereqs:["Phantom 48V","Câble XLR"]},
+  {id:"dpa4099",cat:"mic_condenser",name:"DPA 4099",sub:"Miniature clip instrument",icon:"🎙",phantom:true,desc:"Supercardioïde miniature pour instruments.",tags:["Miniature","48V"],ports:[p("o","out",PT.XLR_M,"MicroDot → XLR (adaptateur)")],prereqs:["Adaptateur MicroDot-XLR","Phantom 48V","Clip DPA spécifique à l\u2019instrument"]},
+  // RIBBONS
+  {id:"r121",cat:"mic_ribbon",name:"Royer R-121",sub:"Ruban figure-8 — JAMAIS 48V !",icon:"🎙",phantom:false,desc:"Référence ruban. Phantom 48V = destruction définitive du ruban !",tags:["Ruban","Figure-8","NO 48V"],ports:[p("o","out",PT.XLR_M,"Sortie XLR (SANS 48V !)")],prereqs:["⛔ Phantom 48V = destruction irréversible","Préampli haut gain min +60dB","Câble XLR qualité"]},
+  {id:"m160",cat:"mic_ribbon",name:"Beyerdynamic M160",sub:"Ruban hypercardioïde",icon:"🎙",phantom:false,desc:"Hypercardioïde rare. Cordes, cuivres.",tags:["Ruban","NO 48V"],ports:[p("o","out",PT.XLR_M,"Sortie XLR (SANS 48V !)")],prereqs:["⛔ Phantom 48V = destruction","Préampli haut gain"]},
+  // WIRELESS
+  {id:"ew100g4",cat:"mic_wireless",name:"Sennheiser EW 100 G4",sub:"HF UHF récepteur + émetteur",icon:"📡",desc:"HF fiable entrée gamme pro.",tags:["HF","UHF"],ports:[p("o","out",PT.XLR_M,"Sortie XLR récepteur EM 100 G4")],prereqs:["Récepteur EM 100 G4 (alimentation secteur)","Câble XLR","Fréquence UHF libre dans la zone"]},
+  {id:"ulxd",cat:"mic_wireless",name:"Shure ULXD",sub:"HF numérique 24bit Dante",icon:"📡",desc:"Numérique 24bit. XLR ou Dante natif.",tags:["HF","Numérique","Dante"],ports:[p("xlr","out",PT.XLR_M,"XLR récepteur ULXD4"),p("dn","out",PT.DANTE_OUT,"Dante (réseau)")],prereqs:["Récepteur ULXD4 (rack 19\u201d)","XLR ou switch Dante Gigabit","Fréquence libre"]},
+  {id:"axient",cat:"mic_wireless",name:"Shure Axient Digital",sub:"HF pro tournée Dante",icon:"📡",desc:"Top gamme Shure. Scanning auto, Dante.",tags:["HF","Pro","Dante"],ports:[p("xlr","out",PT.XLR_M,"XLR récepteur"),p("dn","out",PT.DANTE_OUT,"Dante")],prereqs:["Récepteur AD4D/Q","Switch Dante Gigabit","Spectrum Manager recommandé"]},
+  {id:"ewdx",cat:"mic_wireless",name:"Sennheiser EW-DX",sub:"HF numérique compact",icon:"📡",desc:"Configuration via app. Compact et fiable.",tags:["HF","Numérique"],ports:[p("o","out",PT.XLR_M,"XLR récepteur EW-DX")],prereqs:["Récepteur EW-DX","Câble XLR","App Sennheiser Control Cockpit"]},
+  // LAVALIER
+  {id:"dpa4061",cat:"mic_lavalier",name:"DPA 4061",sub:"Cravate omnidirectionnel broadcast",icon:"🔬",phantom:true,desc:"Référence cravate théâtre et broadcast.",tags:["Cravate","Broadcast"],ports:[p("o","out",PT.XLR_M,"MicroDot → XLR ou émetteur HF")],prereqs:["Émetteur HF compatible OU préampli DPA MPS-6030","Phantom 48V si connexion directe"]},
+  {id:"mke2",cat:"mic_lavalier",name:"Sennheiser MKE 2",sub:"Cravate pour émetteur HF EW",icon:"🔬",desc:"Pour émetteurs HF Sennheiser EW.",tags:["Cravate","HF"],ports:[p("o","out",PT.JACK_TS,"Jack 3.5 → émetteur HF")],prereqs:["Émetteur HF Sennheiser SK 100/300/500/EW-DX"]},
+  // GOOSENECK
+  {id:"mx418",cat:"mic_goose",name:"Shure MX418/C",sub:"Col de cygne 45cm conférence",icon:"🦢",phantom:true,desc:"Référence église et conférence.",tags:["Conférence","48V"],ports:[p("o","out",PT.XLR_M,"Sortie XLR (48V)")],prereqs:["Phantom 48V","Câble XLR","Montage sur pupitre ou table"]},
+  // DIGITAL MIXERS
+  {id:"tf1",cat:"mixer_digital",name:"Yamaha TF1",sub:"16 voies tactile Dante",icon:"🎛",desc:"Console tactile 7\u201d. Dante optionnel.",tags:["Numérique","Tactile","Dante"],ports:[p("xi","in",PT.XLR_F,"Entrées XLR 1-16 micro/ligne"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Aux"),p("dn","out",PT.DANTE_OUT,"Dante (carte NY64-D)")],prereqs:["Alimentation 230V","Câbles XLR","Carte Dante NY64-D si réseau audio"]},
+  {id:"sq5",cat:"mixer_digital",name:"Allen & Heath SQ-5",sub:"96kHz 48 voies AES50",icon:"🎛",desc:"96kHz natif. Qualité remarquable.",tags:["Numérique","96kHz","AES50"],ports:[p("xi","in",PT.XLR_F,"Entrées locales XLR 1-16"),p("aeso","out",PT.AES50_OUT,"AES50 A+B vers stage box"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Aux")],prereqs:["Alimentation 230V","Stage box AR2412 ou DX168","CAT5e/6 STP blindé ≤100m"]},
+  {id:"x32",cat:"mixer_digital",name:"Behringer X32",sub:"32 voies AES50 motorisées",icon:"🎛",desc:"32 voies motorisées. Excellent qualité/prix.",tags:["Numérique","AES50"],ports:[p("xi","in",PT.XLR_F,"Entrées locales XLR 1-16"),p("aeso","out",PT.AES50_OUT,"AES50 A+B vers stage box"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Bus")],prereqs:["Alimentation 230V","Câbles XLR","Stage box S16/S32 pour AES50"]},
+  {id:"xr18",cat:"mixer_digital",name:"Behringer XR18",sub:"Rack 18 voies iPad WiFi",icon:"🎛",desc:"18 entrées. Contrôle iPad uniquement.",tags:["Numérique","iPad","WiFi"],ports:[p("xi","in",PT.XLR_F,"XLR/combo 1-16"),p("ji","in",PT.JACK_IN,"Jack 17-18 ligne"),p("xo","out",PT.XLR_M,"Sorties XLR LR + 4 Bus")],prereqs:["Alimentation 230V","Router WiFi 2.4GHz","iPad + appli X Air","Câbles XLR"]},
+  {id:"m32",cat:"mixer_digital",name:"Midas M32",sub:"32 voies préamplis Midas",icon:"🎛",desc:"Préamplis Midas légendaires. AES50 natif.",tags:["Numérique","AES50","Pro"],ports:[p("xi","in",PT.XLR_F,"Entrées locales XLR 1-16"),p("aeso","out",PT.AES50_OUT,"AES50 A+B vers stage box"),p("xo","out",PT.XLR_M,"Sorties XLR LR + Bus")],prereqs:["Alimentation 230V","Stage box DL16/DL32 pour AES50"]},
+  {id:"dlive",cat:"mixer_digital",name:"Allen & Heath dLive S5000",sub:"Touring FPGA 96kHz",icon:"🎛",desc:"Système touring haut de gamme. FPGA.",tags:["Numérique","96kHz","Touring"],ports:[p("mo","out",PT.MADI_OUT,"MADI vers MixRack"),p("dn","out",PT.DANTE_OUT,"Dante réseau"),p("xo","out",PT.XLR_M,"Sorties XLR locales")],prereqs:["MixRack DM32 ou DM64","MADI ou réseau Dante Gigabit","Technicien certifié A&H"]},
+  {id:"cl5",cat:"mixer_digital",name:"Yamaha CL5",sub:"72 voies Dante touring pro",icon:"🎛",desc:"Flagship Yamaha. 72 voies Dante.",tags:["Numérique","Dante","Pro","Touring"],ports:[p("dn","out",PT.DANTE_OUT,"Dante vers Rio stage box"),p("xo","out",PT.XLR_M,"Sorties XLR locales")],prereqs:["Stagebox Rio3224-D2 ou Rio1608-D2","CAT6 Gigabit vers switch Dante","Technicien qualifié"]},
+  // ANALOG MIXERS
+  {id:"mg16xu",cat:"mixer_analog",name:"Yamaha MG16XU",sub:"16 voies analogique USB FX",icon:"🎚",desc:"Analogique fiable. Effets SPX intégrés.",tags:["Analogique","16 voies"],ports:[p("xi","in",PT.XLR_F,"Entrées micro XLR 1-8"),p("ji","in",PT.JACK_IN,"Entrées ligne Jack 9-16"),p("xo","out",PT.XLR_M,"Sorties Master LR XLR"),p("jo","out",PT.JACK_TRS,"Bus / Direct Jack TRS")],prereqs:["Alimentation 230V","Câbles XLR et Jack 6.35"]},
+  {id:"profx12",cat:"mixer_analog",name:"Mackie ProFX12v3",sub:"12 voies USB FX",icon:"🎚",desc:"12 voies, FX intégrés, USB stéréo.",tags:["Analogique","12 voies"],ports:[p("xi","in",PT.XLR_F,"Entrées micro XLR 1-6"),p("ji","in",PT.JACK_IN,"Entrées ligne Jack 7-12"),p("xo","out",PT.XLR_M,"Sorties XLR LR")],prereqs:["Alimentation 230V","Câbles XLR et Jack"]},
+  {id:"zed22fx",cat:"mixer_analog",name:"Allen & Heath ZED-22FX",sub:"22 voies GB30 FX",icon:"🎚",desc:"Préamplis GB30. FX intégrés.",tags:["Analogique","22 voies"],ports:[p("xi","in",PT.XLR_F,"Entrées XLR 1-8"),p("ji","in",PT.JACK_IN,"Entrées ligne Jack 9-22"),p("xo","out",PT.XLR_M,"Master LR XLR")],prereqs:["Alimentation 230V","Câbles XLR et Jack"]},
+  // ACTIVE SPEAKERS
+  {id:"k12",cat:"speaker_active",name:"QSC K12.2",sub:"Active 12\u201d 2000W DSP",icon:"🔊",desc:"Référence active. 2000W classe D. 8 presets DSP.",tags:["Active","12\u201d","2000W"],ports:[p("xi","in",PT.XLR_F,"XLR In (depuis console ou processeur)"),p("ji","in",PT.JACK_IN,"Jack In (optionnel)"),p("xth","out",PT.XLR_M,"XLR Thru vers autre enceinte")],prereqs:["Alimentation 230V","Câble XLR depuis console ou processeur","Pied enceinte"]},
+  {id:"k10",cat:"speaker_active",name:"QSC K10.2",sub:"Active 10\u201d 2000W",icon:"🔊",desc:"Version 10\u201d compacte.",tags:["Active","10\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In"),p("xth","out",PT.XLR_M,"XLR Thru")],prereqs:["Alimentation 230V","Câble XLR"]},
+  {id:"dxr12",cat:"speaker_active",name:"Yamaha DXR12mkII",sub:"Active 12\u201d 1100W DSP",icon:"🔊",desc:"DSP D-CONTOUR intégré.",tags:["Active","12\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In"),p("xth","out",PT.XLR_M,"XLR Thru")],prereqs:["Alimentation 230V","Câble XLR"]},
+  {id:"dzr15",cat:"speaker_active",name:"Yamaha DZR15",sub:"Active 15\u201d 2000W Dante",icon:"🔊",desc:"XLR ou Dante natif. Haut de gamme.",tags:["Active","15\u201d","Dante"],ports:[p("xi","in",PT.XLR_F,"XLR In"),p("di","in",PT.DANTE_IN,"Dante In")],prereqs:["Alimentation 230V","XLR ou switch Dante Gigabit"]},
+  {id:"prx815",cat:"speaker_active",name:"JBL PRX815",sub:"Active 15\u201d 1500W WiFi DSP",icon:"🔊",desc:"Contrôle DSP via WiFi.",tags:["Active","15\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In"),p("xth","out",PT.XLR_M,"XLR Thru")],prereqs:["Alimentation 230V","Câble XLR"]},
+  {id:"rcf932",cat:"speaker_active",name:"RCF ART 932-A MK5",sub:"Active 12\u201d 2100W FiRPHASE",icon:"🔊",desc:"DSP FiRPHASE. Dernière génération ART.",tags:["Active","12\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In"),p("xth","out",PT.XLR_M,"XLR Thru")],prereqs:["Alimentation 230V","Câble XLR"]},
+  // PASSIVE SPEAKERS
+  {id:"lx12",cat:"speaker_passive",name:"L-Acoustics X12",sub:"Passive 12\u201d coaxiale",icon:"🔈",desc:"Coaxiale passive. Utilisable seule ou en réseau.",tags:["Passive","12\u201d","L-Acoustics"],ports:[p("spki","in",PT.SPEAKON_IN,"Speakon NL4 In"),p("spkl","out",PT.SPEAKON,"Speakon NL4 Loop")],prereqs:["Ampli L-Acoustics LA4X ou LA12X","Câble Speakon NL4","Processeur avec preset X12"]},
+  {id:"prx812",cat:"speaker_passive",name:"JBL PRX812",sub:"Passive 12\u201d location/installation",icon:"🔈",desc:"Installation et location polyvalente.",tags:["Passive","12\u201d"],ports:[p("spki","in",PT.SPEAKON_IN,"Speakon NL4")],prereqs:["Ampli + crossover/processeur","Câble Speakon NL4"]},
+  // SUBS
+  {id:"ks212c",cat:"subwoofer",name:"QSC KS212C",sub:"Sub double 12\u201d cardioïde 3600W",icon:"🔉",desc:"Sub cardioïde actif. Directivité réglable via DSP.",tags:["Sub","Active","Cardioïde"],ports:[p("xi","in",PT.XLR_F,"XLR In (depuis console)"),p("xo","out",PT.XLR_M,"XLR Out vers tops")],prereqs:["Alimentation 230V","XLR depuis console","Régler crossover via DSP"]},
+  {id:"ks118",cat:"subwoofer",name:"QSC KS118",sub:"Sub 18\u201d 3600W outdoor",icon:"🔉",desc:"Très puissant. Concerts outdoor.",tags:["Sub","Active","18\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In"),p("xo","out",PT.XLR_M,"XLR Out vers tops")],prereqs:["Alimentation 230V","XLR depuis console"]},
+  {id:"dxs15",cat:"subwoofer",name:"Yamaha DXS15mkII",sub:"Sub 15\u201d 1020W D-XSUB",icon:"🔉",desc:"Algorithme D-XSUB Yamaha.",tags:["Sub","Active","15\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In"),p("xo","out",PT.XLR_M,"XLR Out vers tops")],prereqs:["Alimentation 230V","XLR depuis console"]},
+  {id:"sb18",cat:"subwoofer",name:"L-Acoustics SB18",sub:"Sub 18\u201d passif",icon:"🔉",desc:"Sub passif pour système L-Acoustics.",tags:["Sub","Passif"],ports:[p("spki","in",PT.SPEAKON_IN,"Speakon NL4")],prereqs:["Ampli LA4X ou LA12X","Speakon NL4","Processeur preset SB18"]},
+  // MONITORS
+  {id:"dxr8",cat:"monitor",name:"Yamaha DXR8mkII",sub:"Wedge actif 8\u201d 700W",icon:"📢",desc:"Retour de scène compact. 35° ou 47°.",tags:["Retour","Active","8\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In (bus Aux retour console)")],prereqs:["Alimentation 230V","Câble XLR depuis bus AUX console","Positionnement angle correct"]},
+  {id:"zxa1",cat:"monitor",name:"EV ZXA1-90",sub:"Wedge actif 8\u201d 800W",icon:"📢",desc:"Léger 7.7kg. 90° horizontal.",tags:["Retour","Active","8\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In")],prereqs:["Alimentation 230V","XLR bus AUX"]},
+  {id:"srx815p",cat:"monitor",name:"JBL SRX815P",sub:"Retour 15\u201d actif 2000W",icon:"📢",desc:"Grand retour scène.",tags:["Retour","Active","15\u201d"],ports:[p("xi","in",PT.XLR_F,"XLR In")],prereqs:["Alimentation 230V","XLR bus AUX"]},
+  // AMPLIFIERS
+  {id:"la4x",cat:"amp",name:"L-Acoustics LA4X",sub:"4×1000W DSP AVB/Dante",icon:"⚡",desc:"Ampli référence L-Acoustics. DSP, AVB intégré.",tags:["Ampli","DSP","AVB"],ports:[p("xi1","in",PT.XLR_F,"XLR In 1-4 (depuis processeur)"),p("di","in",PT.DANTE_IN,"AVB/Dante réseau"),p("sp1","out",PT.SPEAKON,"Speakon NL4 Ch.1"),p("sp2","out",PT.SPEAKON,"Speakon NL4 Ch.2"),p("sp3","out",PT.SPEAKON,"Speakon NL4 Ch.3"),p("sp4","out",PT.SPEAKON,"Speakon NL4 Ch.4")],prereqs:["Alimentation 230V","XLR depuis processeur ou Dante","Câbles Speakon NL4 vers enceintes","Rack 2U"]},
+  {id:"xti4002",cat:"amp",name:"Crown XTi 4002",sub:"2×1200W DSP BandManager",icon:"⚡",desc:"DSP BandManager. Crossover, délai, limiteur.",tags:["Ampli","DSP"],ports:[p("xi1","in",PT.XLR_F,"XLR In Ch.1"),p("xi2","in",PT.XLR_F,"XLR In Ch.2"),p("sp1","out",PT.SPEAKON,"Speakon Ch.1"),p("sp2","out",PT.SPEAKON,"Speakon Ch.2")],prereqs:["Alimentation 230V","XLR depuis processeur","Speakon vers enceintes"]},
+  {id:"xls1502",cat:"amp",name:"Crown XLS 1502",sub:"2×525W léger budget",icon:"⚡",desc:"Léger et fiable. Budget small venues.",tags:["Ampli","Budget"],ports:[p("xi1","in",PT.XLR_F,"XLR In Ch.1"),p("xi2","in",PT.XLR_F,"XLR In Ch.2"),p("sp1","out",PT.SPEAKON,"Speakon Ch.1"),p("sp2","out",PT.SPEAKON,"Speakon Ch.2")],prereqs:["Alimentation 230V","XLR depuis processeur","Speakon vers enceintes"]},
+  {id:"la12x",cat:"amp",name:"L-Acoustics LA12X",sub:"4×2600W AVB/Dante flagship",icon:"⚡",desc:"Flagship L-Acoustics. 4×2600W AVB.",tags:["Ampli","DSP","Pro"],ports:[p("xi1","in",PT.XLR_F,"XLR In 1-4"),p("di","in",PT.DANTE_IN,"AVB/Dante"),p("sp1","out",PT.SPEAKON,"Speakon NL4 Ch.1"),p("sp2","out",PT.SPEAKON,"Speakon NL4 Ch.2"),p("sp3","out",PT.SPEAKON,"Speakon NL4 Ch.3"),p("sp4","out",PT.SPEAKON,"Speakon NL4 Ch.4")],prereqs:["Alimentation triphasée","AVB ou XLR","Speakon NL4","Rack 2U"]},
+  // DI BOXES
+  {id:"j48",cat:"di",name:"Radial J48",sub:"DI active phantom 48V référence",icon:"🔌",desc:"Référence DI active. Transformateur haute qualité.",tags:["DI","Active","48V"],ports:[p("ji","in",PT.JACK_IN,"Jack In (depuis instrument)"),p("jth","out",PT.JACK_TS,"Jack Thru vers ampli instrument"),p("xo","out",PT.XLR_M,"XLR Out symétrique vers console")],prereqs:["Phantom 48V depuis console","Câble Jack depuis instrument","Câble XLR vers console"]},
+  {id:"js2",cat:"di",name:"Radial JS2",sub:"DI passive stéréo clavier/piano",icon:"🔌",desc:"DI passive stéréo. Claviers, piano numérique.",tags:["DI","Passive","Stéréo"],ports:[p("jil","in",PT.JACK_IN,"Jack In L"),p("jir","in",PT.JACK_IN,"Jack In R"),p("xol","out",PT.XLR_M,"XLR L vers console"),p("xor","out",PT.XLR_M,"XLR R vers console")],prereqs:["2× câble Jack depuis clavier","2× câble XLR vers console"]},
+  {id:"jdi",cat:"di",name:"Radial JDI",sub:"DI passive Jensen mono",icon:"🔌",desc:"Transformateur Jensen. Sans alimentation.",tags:["DI","Passive"],ports:[p("ji","in",PT.JACK_IN,"Jack In (instrument)"),p("xo","out",PT.XLR_M,"XLR Out vers console")],prereqs:["Câble Jack 6.35","Câble XLR console"]},
+  {id:"type85",cat:"di",name:"Countryman Type 85",sub:"DI active instrument",icon:"🔌",desc:"Appréciée basse et guitare.",tags:["DI","Active","48V"],ports:[p("ji","in",PT.JACK_IN,"Jack In"),p("jth","out",PT.JACK_TS,"Jack Thru"),p("xo","out",PT.XLR_M,"XLR Out vers console")],prereqs:["Phantom 48V","Câble Jack","Câble XLR"]},
+  // STAGE BOXES
+  {id:"s16",cat:"stagebox",name:"Behringer S16",sub:"16in/8out AES50 X32/M32",icon:"📦",desc:"Stage box X32/M32 via AES50 CAT5e.",tags:["Stage Box","AES50","X32"],ports:[p("xisb","in",PT.XLR_F,"16× XLR In sources scène"),p("xosb","out",PT.XLR_M,"8× XLR Out retours scène"),p("aesin","in",PT.AES50_IN,"AES50 depuis console X32/M32")],prereqs:["Console X32 ou M32 ou compatible AES50","CAT5e STP ≤100m","Alimentation 230V en scène"]},
+  {id:"ar2412",cat:"stagebox",name:"Allen & Heath AR2412",sub:"24in/12out AES50 SQ série",icon:"📦",desc:"Stage box SQ. 96kHz.",tags:["Stage Box","AES50","SQ"],ports:[p("xisb","in",PT.XLR_F,"24× XLR In"),p("xosb","out",PT.XLR_M,"12× XLR Out retours"),p("aesin","in",PT.AES50_IN,"AES50 depuis console SQ")],prereqs:["Console SQ-5/6/7","CAT5e STP ≤100m","Alimentation 230V"]},
+  {id:"rio3224",cat:"stagebox",name:"Yamaha Rio3224-D2",sub:"32in/16out Dante stage box",icon:"📦",desc:"Stage box Dante. Jusqu\u2019à 4 consoles.",tags:["Stage Box","Dante","Yamaha"],ports:[p("xisb","in",PT.XLR_F,"32× XLR In"),p("xosb","out",PT.XLR_M,"16× XLR Out retours"),p("dno","out",PT.DANTE_OUT,"Dante vers console(s)")],prereqs:["Console Dante (TF/CL/QL)","CAT6 STP ≤100m switch Gigabit","Alimentation 230V scène"]},
+  // PROCESSORS
+  {id:"drivepa2",cat:"processor",name:"dbx DriveRack PA2",sub:"Processeur système EQ crossover délai",icon:"⚙️",desc:"EQ 31 bandes, crossover, délai, limiteur, RTA.",tags:["Processeur","EQ","Crossover"],ports:[p("xip1","in",PT.XLR_F,"XLR In L (depuis console)"),p("xip2","in",PT.XLR_F,"XLR In R (depuis console)"),p("xop1","out",PT.XLR_M,"XLR Out 1 tops L"),p("xop2","out",PT.XLR_M,"XLR Out 2 tops R"),p("xop3","out",PT.XLR_M,"XLR Out 3 sub L"),p("xop4","out",PT.XLR_M,"XLR Out 4 sub R")],prereqs:["Alimentation 230V","XLR depuis console","XLR vers amplis ou enceintes actives","Assistant setup via appli"]},
+  {id:"dn360",cat:"processor",name:"Klark Teknik DN360",sub:"EQ graphique 31 bandes stéréo",icon:"⚙️",desc:"EQ graphique analogique référence.",tags:["EQ","Graphique","31 bandes"],ports:[p("xil","in",PT.XLR_F,"XLR In L"),p("xir","in",PT.XLR_F,"XLR In R"),p("xol","out",PT.XLR_M,"XLR Out L"),p("xor","out",PT.XLR_M,"XLR Out R")],prereqs:["Alimentation 230V","XLR insert console ou câblage série"]},
+  {id:"dbx260",cat:"processor",name:"dbx 260",sub:"Processeur loudspeaker 6 sorties",icon:"⚙️",desc:"Crossover, délai, EQ paramétrique.",tags:["Processeur","Crossover","6 sorties"],ports:[p("xi1","in",PT.XLR_F,"XLR In L"),p("xi2","in",PT.XLR_F,"XLR In R"),p("xo1","out",PT.XLR_M,"XLR Out 1"),p("xo2","out",PT.XLR_M,"XLR Out 2"),p("xo3","out",PT.XLR_M,"XLR Out 3"),p("xo4","out",PT.XLR_M,"XLR Out 4"),p("xo5","out",PT.XLR_M,"XLR Out 5"),p("xo6","out",PT.XLR_M,"XLR Out 6")],prereqs:["Alimentation 230V","XLR depuis console","XLR vers amplis"]},
+  // INTERFACES
+  {id:"scarlett",cat:"interface",name:"Focusrite Scarlett 18i20",sub:"USB 18in/20out",icon:"🖥",desc:"Interface USB 18 entrées. Studio et live.",tags:["Interface","USB"],ports:[p("xi","in",PT.XLR_F,"XLR/Jack combo 1-8"),p("xo","out",PT.XLR_M,"Sorties XLR 1-8")],prereqs:["PC/Mac USB-C","DAW (Reaper, Logic, Pro Tools)","Câbles XLR"]},
+  // RECORDERS
+  {id:"h6",cat:"recorder",name:"Zoom H6",sub:"Portable 6 pistes",icon:"⏺",desc:"6 pistes portable. Capsule interchangeable.",tags:["Portable","6 pistes"],ports:[p("xi","in",PT.XLR_F,"XLR/Jack In 1-4")],prereqs:["Batteries AA ou USB","Carte SD","Sources XLR ou Jack"]},
+  {id:"da6400",cat:"recorder",name:"Tascam DA-6400",sub:"64 pistes Dante/MADI rack 2U",icon:"⏺",desc:"64 pistes via Dante ou MADI.",tags:["Dante","MADI","64 pistes"],ports:[p("di","in",PT.DANTE_IN,"Dante In"),p("mi","in",PT.MADI_IN,"MADI In")],prereqs:["Alimentation 230V","Switch Dante Gigabit ou convertisseur MADI","Disques SSD internes"]},
+  // INSTRUMENTS
+  {id:"gelect",cat:"instrument_string",name:"Guitare électrique",sub:"Signal passif Jack 6.35 TS",icon:"🎸",desc:"Signal passif. Nécessite DI active ou ampli microphonié.",tags:["Jack","Passif"],ports:[p("o","out",PT.JACK_TS,"Jack 6.35 TS (instrument)")],prereqs:["OPTION A: DI active (Radial J48) → XLR console","OPTION B: Ampli guitare + SM57 → XLR console","Câble Jack 6.35 mono"]},
+  {id:"gelectro",cat:"instrument_string",name:"Guitare électro-acoustique",sub:"Préampli intégré Jack 6.35",icon:"🎸",desc:"Préampli intégré. DI recommandée.",tags:["Jack","Préampli"],ports:[p("o","out",PT.JACK_TS,"Jack 6.35 (préampli intégré)")],prereqs:["DI active recommandée (Radial J48)","Câble Jack 6.35","Batterie 9V dans la guitare"]},
+  {id:"basse",cat:"instrument_string",name:"Guitare basse",sub:"Jack 6.35 actif ou passif",icon:"🎸",desc:"DI active recommandée pour son propre.",tags:["Jack","Basse"],ports:[p("o","out",PT.JACK_TS,"Jack 6.35 TS")],prereqs:["DI active Radial J48","Câble Jack","XLR vers console"]},
+  {id:"violon",cat:"instrument_string",name:"Violon électrique / pickup",sub:"Niveau très faible Jack 6.35",icon:"🎻",desc:"DI active obligatoire (niveau micro-volt).",tags:["Jack","Pickup"],ports:[p("o","out",PT.JACK_TS,"Jack 6.35")],prereqs:["DI active OBLIGATOIRE (Radial J48 ou Type 85)","Câble Jack","Phantom 48V sur voie DI"]},
+  {id:"clavier",cat:"instrument_keys",name:"Clavier / Piano numérique",sub:"Ligne stéréo Jack TRS",icon:"🎹",desc:"Sortie ligne stéréo. DI stéréo ou entrées ligne.",tags:["Jack","Stéréo","Ligne"],ports:[p("jl","out",PT.JACK_TRS,"Jack L sortie gauche"),p("jr","out",PT.JACK_TRS,"Jack R sortie droite")],prereqs:["2× câble Jack TRS","DI stéréo JS2 OU entrées ligne console (pas micro)","2 canaux console"]},
+  {id:"synth",cat:"instrument_keys",name:"Synthétiseur",sub:"Sortie ligne Jack TRS stéréo",icon:"🎹",desc:"Ligne stéréo. Niveau ligne — pas de DI nécessaire.",tags:["Jack","Stéréo"],ports:[p("jl","out",PT.JACK_TRS,"Jack L"),p("jr","out",PT.JACK_TRS,"Jack R")],prereqs:["2× câble Jack TRS vers entrées ligne console","2 canaux"]},
+  {id:"hammond",cat:"instrument_keys",name:"Orgue Hammond + Leslie",sub:"Stéréo DI ou micros Leslie",icon:"🎹",desc:"Leslie stéréo → DI stéréo ou 2 micros.",tags:["Jack","Leslie","Stéréo"],ports:[p("jl","out",PT.JACK_TRS,"Jack L Leslie"),p("jr","out",PT.JACK_TRS,"Jack R Leslie")],prereqs:["DI stéréo JS2 OU 2× SM57 sur Leslie","2 canaux console"]},
+  {id:"sax",cat:"instrument_wind",name:"Saxophone",sub:"Acoustic — microphonie externe",icon:"🎷",desc:"SM57 devant cloche ou DPA 4099 clip.",tags:["Acoustique"],ports:[],prereqs:["SM57 ou DPA 4099 clip sax","Stand ou pince","Câble XLR"]},
+  {id:"trompette",cat:"instrument_wind",name:"Trompette / Cuivres",sub:"Acoustic — microphonie externe",icon:"🎺",desc:"SM57 ou e906 en angle sur la cloche.",tags:["Acoustique"],ports:[],prereqs:["SM57 ou e906","Pince cloche ou stand","Câble XLR"]},
+  {id:"batterie",cat:"instrument_perc",name:"Kit batterie acoustique",sub:"Multi-microphonie 5 à 12 voies",icon:"🥁",desc:"Min 5 voies: kick, snare, toms×2, overheads×2.",tags:["Multi-voies","Batterie"],ports:[],prereqs:["D112 ou Beta52 pour kick (+ Beta91A intérieur optionnel)","SM57 snare dessus (+ optionnel dessous)","MD421 ou SM57 toms ×2 min","SM81 ou C414 overheads ×2 stéréo","5 à 12 canaux console","Phantom 48V pour overheads","Câbles XLR + pinces Shure ou AKG"]},
+  // ACCESSORIES
+  {id:"switch-dante",cat:"accessory",name:"Switch Gigabit QoS Dante",sub:"Commutateur réseau audio 1Gbps",icon:"🛠",desc:"QoS DSCP indispensable pour Dante sans latence.",tags:["Dante","Réseau","QoS"],ports:[p("di","in",PT.DANTE_IN,"Port réseau Dante In"),p("do","out",PT.DANTE_OUT,"Port réseau Dante Out")],prereqs:["CAT6 STP sur tous les liens Dante","QoS DSCP activé priorité EF ou AF41","Jumbo frames DÉSACTIVÉS","Switch dédié recommandé (pas de consumer)"]},
+  {id:"phantom-ext",cat:"accessory",name:"Alimentation Phantom 48V externe",sub:"Pour tables analogiques sans phantom",icon:"🛠",desc:"Phantom externe si la console n\u2019en dispose pas.",tags:["Phantom","48V"],ports:[p("xi","in",PT.XLR_F,"XLR In (depuis console ou câble)"),p("xo","out",PT.XLR_M,"XLR Out (vers micro)")],prereqs:["Alimentation 230V","Câbles XLR"]},
+  // VIDEO
+  {id:"projecteur",cat:"video",name:"Projecteur Epson EB-L615U",sub:"Laser 6000lm WUXGA installation",icon:"📽",desc:"Laser 6000 lumens WUXGA. Installation et touring.",tags:["Laser","WUXGA"],ports:[p("hi","in",PT.HDMI_IN,"HDMI In 1")],prereqs:["Alimentation 230V","Câble HDMI depuis source vidéo","Écran ou mur blanc","Distance recul calculée selon objectif"]},
+  {id:"atem-mini",cat:"video",name:"Blackmagic ATEM Mini Pro",sub:"Mélangeur 4× HDMI + streaming",icon:"📽",desc:"4 HDMI in, streaming USB, enregistrement.",tags:["Vidéo","Streaming","HDMI"],ports:[p("hi1","in",PT.HDMI_IN,"HDMI In 1"),p("hi2","in",PT.HDMI_IN,"HDMI In 2"),p("hi3","in",PT.HDMI_IN,"HDMI In 3"),p("hi4","in",PT.HDMI_IN,"HDMI In 4"),p("hopgm","out",PT.HDMI_OUT,"HDMI Programme vers écran ou projecteur")],prereqs:["Sources HDMI (cameras, laptops)","Câble HDMI vers écran","USB-C vers PC pour streaming","Réseau Ethernet"]},
+  {id:"splitter",cat:"video",name:"Splitter HDMI 1→4",sub:"Distributeur vidéo 4 sorties",icon:"📽",desc:"1 source HDMI vers 4 écrans identiques.",tags:["HDMI","Splitter"],ports:[p("hispl","in",PT.HDMI_IN,"HDMI In source"),p("ho1","out",PT.HDMI_OUT,"HDMI Out 1"),p("ho2","out",PT.HDMI_OUT,"HDMI Out 2"),p("ho3","out",PT.HDMI_OUT,"HDMI Out 3"),p("ho4","out",PT.HDMI_OUT,"HDMI Out 4")],prereqs:["Source HDMI","4× câbles HDMI","Alimentation 5V USB"]},
+
+  // ══════════════════════════════════════════════════════════════
+  // RÉGIE STREAMING / BROADCAST
+  // ══════════════════════════════════════════════════════════════
+
+  // ── CAMÉRAS ──────────────────────────────────────────────────
+  {id:"sony-fx3",cat:"camera",name:"Sony FX3",sub:"Cinéma plein format 4K",icon:"📷",desc:"Capteur plein format 4K 120fps. HDMI et SDI.",tags:["4K","Cinéma","Full Frame"],ports:[p("hdmi","out",PT.HDMI_OUT,"HDMI Out (4K)"),p("usbc","out",PT.USBC_OUT,"USB-C (streaming direct)")],prereqs:["Batterie NP-FZ100 ou alim DC","Carte CFexpress","Câble HDMI vers switcher","Trépied ou rig"]},
+  {id:"sony-zv-e2",cat:"camera",name:"Sony ZV-E2",sub:"Caméra streaming APS-C 4K",icon:"📷",desc:"Conçue pour le streaming. HDMI clean out.",tags:["4K","Streaming","APS-C"],ports:[p("hdmi","out",PT.HDMI_OUT,"HDMI Out clean (sans OSD)"),p("usbc","out",PT.USBC_OUT,"USB-C (webcam mode)")],prereqs:["Batterie NP-FW50","HDMI vers switcher ou carte de capture","Optique compatible Sony E"]},
+  {id:"canon-r50",cat:"camera",name:"Canon EOS R50",sub:"Caméra streaming APS-C",icon:"📷",desc:"HDMI clean out. Idéale streaming live.",tags:["4K","Streaming","APS-C"],ports:[p("hdmi","out",PT.HDMI_OUT,"HDMI Out clean"),p("usbc","out",PT.USBC_OUT,"USB-C (webcam)")],prereqs:["Batterie LP-E17","Adaptateur secteur pour streaming continu","Câble HDMI","Optique Canon RF"]},
+  {id:"panasonic-lumix-s5",cat:"camera",name:"Panasonic Lumix S5 IIX",sub:"Hybride plein format streaming",icon:"📷",desc:"4K 60fps, HDMI clean out, streaming USB-C direct.",tags:["4K","Plein format","Streaming"],ports:[p("hdmi","out",PT.HDMI_OUT,"HDMI Out 4K60"),p("usbc","out",PT.USBC_OUT,"USB-C (streaming Lumix Tether)")],prereqs:["Batterie DMW-BLK22","Alim secteur USB-PD recommandée","HDMI vers switcher","Optique L-mount"]},
+  {id:"sony-ptz-hx310",cat:"camera",name:"Sony SRG-X400",sub:"Caméra PTZ 4K 40× zoom",icon:"📷",desc:"PTZ motorisée 4K. Contrôle IP, RS-422, VISCA.",tags:["PTZ","4K","IP","VISCA","SDI"],ports:[p("sdi","out",PT.SDI_OUT,"3G-SDI Out"),p("hdmi","out",PT.HDMI_OUT,"HDMI Out"),p("eth","out",PT.ETH_OUT,"Ethernet (IP/PoE contrôle)")],prereqs:["Alimentation PoE+ ou DC 12V","SDI ou HDMI vers switcher","Câble CAT6 contrôle IP","Fixation murale ou plafond certifiée"]},
+  {id:"birddog-p200",cat:"camera",name:"BirdDog P200",sub:"Caméra PTZ NDI Full HD",icon:"📷",desc:"PTZ Full NDI. Retour tally intégré.",tags:["PTZ","NDI","Tally"],ports:[p("ndi","out",PT.NDI_OUT,"NDI (réseau)"),p("sdi","out",PT.SDI_OUT,"SDI Out"),p("hdmi","out",PT.HDMI_OUT,"HDMI Out"),p("eth","out",PT.ETH_OUT,"Ethernet (NDI + contrôle + tally)")],prereqs:["Switch réseau Gigabit","CAT6 vers switch","Alimentation PoE ou DC","Contrôle via browser ou NDI Studio Monitor"]},
+  {id:"webcam-logitech-4k",cat:"camera",name:"Logitech Brio 4K",sub:"Webcam USB 4K HDR",icon:"📷",desc:"4K 30fps ou 1080p 60fps. Plug & play USB.",tags:["4K","USB","Webcam"],ports:[p("usb","out",PT.USB_OUT,"USB 3.0 vers ordinateur")],prereqs:["Port USB 3.0","Logiciel streaming (OBS, Streamlabs)","Bon éclairage face caméra"]},
+  {id:"gopro-hero12",cat:"camera",name:"GoPro Hero 12 Black",sub:"Action cam 4K60 angle large",icon:"📷",desc:"4K60fps. HDMI via adaptateur ou USB-C.",tags:["4K","Action","USB-C"],ports:[p("usbc","out",PT.USBC_OUT,"USB-C (mode webcam ou HDMI via adaptateur)")],prereqs:["Batterie ou alim USB-C continue","Adaptateur Media Mod si HDMI","Fixation stable","Mode webcam activé"]},
+
+  // ── CARTES DE CAPTURE ────────────────────────────────────────
+  {id:"elgato-4k60pro",cat:"capture",name:"Elgato 4K60 Pro MK.2",sub:"Carte de capture PCIe 4K60",icon:"🎬",desc:"4K 60fps HDR. Carte PCIe interne. Passthrough 4K.",tags:["4K","PCIe","Passthrough"],ports:[p("hi1","in",PT.HDMI_IN,"HDMI In (source)"),p("ho1","out",PT.HDMI_OUT,"HDMI Out (passthrough 4K)")],prereqs:["PC avec slot PCIe x4","Logiciel 4K Capture Utility ou OBS","Câble HDMI depuis caméra","Windows 10/11 ou macOS"]},
+  {id:"elgato-camlink4k",cat:"capture",name:"Elgato Cam Link 4K",sub:"Capture USB HDMI 4K60",icon:"🎬",desc:"HDMI vers USB 3.0. Plug & play. Très répandu.",tags:["4K","USB","HDMI"],ports:[p("hi","in",PT.HDMI_IN,"HDMI In (depuis caméra)"),p("usb","out",PT.USB_OUT,"USB 3.0 vers ordinateur")],prereqs:["Port USB 3.0","Source HDMI clean out","Câble HDMI","OBS ou logiciel de streaming"]},
+  {id:"blackmagic-decklink",cat:"capture",name:"Blackmagic DeckLink Mini Recorder 4K",sub:"Carte capture PCIe SDI/HDMI 4K",icon:"🎬",desc:"SDI et HDMI 4K. PCIe. Très utilisé broadcast.",tags:["4K","SDI","PCIe","Broadcast"],ports:[p("sdi","in",PT.SDI_IN,"SDI In 4K"),p("hi","in",PT.HDMI_IN,"HDMI In 4K")],prereqs:["PC avec slot PCIe","Blackmagic Desktop Video","SDI ou HDMI depuis caméra"]},
+  {id:"magewell-usb-capture",cat:"capture",name:"Magewell USB Capture HDMI 4K+",sub:"Capture USB-C HDMI 4K broadcast",icon:"🎬",desc:"Broadcast grade. USB-C. 4K60 10bit.",tags:["4K","USB-C","Broadcast"],ports:[p("hi","in",PT.HDMI_IN,"HDMI In 4K"),p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur")],prereqs:["Port USB-C 3.1 Gen2","Source HDMI 4K","Pilotes Magewell","OBS ou logiciel broadcast"]},
+  {id:"ndi-scan-converter",cat:"capture",name:"NewTek NDI Scan Converter",sub:"Logiciel HDMI/écran vers NDI",icon:"🎬",desc:"Convertit n'importe quelle source HDMI ou bureau PC en flux NDI sur réseau.",tags:["NDI","Logiciel","Réseau"],ports:[p("ndi","out",PT.NDI_OUT,"NDI Out (réseau)")],prereqs:["PC Windows","NDI Tools installé (gratuit)","Réseau Gigabit","Source vidéo (capture card ou bureau)"]},
+
+  // ── MÉLANGEURS VIDÉO ─────────────────────────────────────────
+  {id:"atem-mini-extreme",cat:"switcher",name:"Blackmagic ATEM Mini Extreme ISO",sub:"Mélangeur 8 entrées HDMI + enregistrement",icon:"🎚",desc:"8 HDMI in. Enregistrement ISO toutes caméras. Streaming direct.",tags:["HDMI","ISO","Streaming","8 entrées"],ports:[p("hi1","in",PT.HDMI_IN,"HDMI In 1"),p("hi2","in",PT.HDMI_IN,"HDMI In 2"),p("hi3","in",PT.HDMI_IN,"HDMI In 3"),p("hi4","in",PT.HDMI_IN,"HDMI In 4"),p("hi5","in",PT.HDMI_IN,"HDMI In 5"),p("hi6","in",PT.HDMI_IN,"HDMI In 6"),p("hi7","in",PT.HDMI_IN,"HDMI In 7"),p("hi8","in",PT.HDMI_IN,"HDMI In 8"),p("hopgm","out",PT.HDMI_OUT,"HDMI Programme"),p("hopvw","out",PT.HDMI_OUT,"HDMI Multiview"),p("eth","out",PT.ETH_OUT,"Ethernet (streaming + contrôle ATEM Software)")],prereqs:["Sources HDMI (caméras, PC, PTZ)","Câbles HDMI","Switch réseau pour contrôle","ATEM Software Control (gratuit)","SSD externe pour ISO recording"]},
+  {id:"atem-sdi-pro",cat:"switcher",name:"Blackmagic ATEM SDI Pro ISO",sub:"Mélangeur 4 entrées SDI broadcast",icon:"🎚",desc:"4 SDI in. SDI out. ISO. Tally intégré.",tags:["SDI","ISO","Broadcast","Tally"],ports:[p("sdi1","in",PT.SDI_IN,"SDI In 1"),p("sdi2","in",PT.SDI_IN,"SDI In 2"),p("sdi3","in",PT.SDI_IN,"SDI In 3"),p("sdi4","in",PT.SDI_IN,"SDI In 4"),p("sdipgm","out",PT.SDI_OUT,"SDI Programme"),p("hdmipgm","out",PT.HDMI_OUT,"HDMI Programme"),p("talo","out",PT.TALLY_OUT,"Tally Out RS-422"),p("eth","out",PT.ETH_OUT,"Ethernet (contrôle)")],prereqs:["Caméras avec sortie SDI","Câbles BNC coaxiaux","Switch réseau pour contrôle","ATEM Software Control"]},
+  {id:"roland-v-60hd",cat:"switcher",name:"Roland V-60HD",sub:"Mélangeur vidéo 6 entrées multi-format",icon:"🎚",desc:"6 entrées HDMI/SDI. Scaler intégré. Direct streaming USB.",tags:["HDMI","SDI","Scaler","Streaming"],ports:[p("hi1","in",PT.HDMI_IN,"HDMI In 1-4"),p("sdi1","in",PT.SDI_IN,"SDI In 5-6"),p("hopgm","out",PT.HDMI_OUT,"HDMI Programme"),p("sdipgm","out",PT.SDI_OUT,"SDI Programme"),p("usb","out",PT.USB_OUT,"USB (streaming vers PC)")],prereqs:["Sources HDMI ou SDI","Câbles HDMI/BNC","PC pour streaming USB","Alim 230V"]},
+  {id:"obs-vmix",cat:"switcher",name:"vMix (logiciel régie)",sub:"Régie virtuelle PC streaming pro",icon:"🎚",desc:"Régie logicielle complète. NDI, HDMI, SDI, titres, replay.",tags:["Logiciel","NDI","PC","Pro"],ports:[p("ndi","in",PT.NDI_IN,"NDI In (caméras réseau)"),p("ndi","out",PT.NDI_OUT,"NDI Out (programme vers autres logiciels)")],prereqs:["PC Windows haut de gamme (GPU dédié)","Licences vMix (de Basic à Pro)","Sources HDMI via cartes de capture","NDI pour caméras réseau","Réseau Gigabit si NDI"]},
+
+  // ── ENCODEURS STREAMING ───────────────────────────────────────
+  {id:"elgato-wave-xl",cat:"encoder",name:"Blackmagic Web Presenter 4K",sub:"Encodeur streaming USB/Ethernet HDMI ou SDI",icon:"📡",desc:"Encode HDMI ou SDI en USB ou Ethernet pour streaming.",tags:["Encodeur","USB","Ethernet","4K"],ports:[p("hi","in",PT.HDMI_IN,"HDMI In 4K"),p("sdi","in",PT.SDI_IN,"SDI In 4K"),p("usb","out",PT.USB_OUT,"USB (webcam vers PC streaming)"),p("eth","out",PT.ETH_OUT,"Ethernet (RTMP direct vers plateforme)")],prereqs:["Source HDMI ou SDI depuis switcher","USB vers PC ou connexion Ethernet directe","Compte streaming (YouTube, Twitch, etc.)"]},
+  {id:"teradek-bolt-6",cat:"encoder",name:"Teradek Bolt 6 XT",sub:"Transmetteur vidéo sans fil SDI/HDMI",icon:"📡",desc:"Transmission sans fil 0-frame delay. 1500ft. SDI et HDMI.",tags:["Sans fil","SDI","HDMI","Broadcast"],ports:[p("sdi","in",PT.SDI_IN,"SDI In"),p("hi","in",PT.HDMI_IN,"HDMI In"),p("sdi","out",PT.SDI_OUT,"SDI Out (récepteur)"),p("hi","out",PT.HDMI_OUT,"HDMI Out (récepteur)")],prereqs:["Alimentation V-Mount ou Gold Mount","Source SDI ou HDMI depuis caméra","Récepteur Bolt 6 XT côté régie","Réseau WiFi 5GHz dégagé"]},
+  {id:"liveu-solo",cat:"encoder",name:"LiveU Solo",sub:"Encodeur streaming multi-SIM",icon:"📡",desc:"Streaming pro avec bonding 4G/5G/WiFi. Redondance réseau.",tags:["Streaming","4G","5G","Bonding"],ports:[p("hi","in",PT.HDMI_IN,"HDMI In"),p("sdi","in",PT.SDI_IN,"SDI In"),p("eth","out",PT.ETH_OUT,"Ethernet (streaming vers LiveU Cloud)")],prereqs:["Abonnement LiveU","Cartes SIM 4G/5G","Source HDMI ou SDI","Alimentation secteur ou batterie V-Mount"]},
+  {id:"yamaha-ag08",cat:"encoder",name:"Yamaha AG08",sub:"Interface streaming audio 8 voies USB",icon:"📡",desc:"Mixeur interface streaming 8 voies. Effets, USB-C, loopback.",tags:["USB-C","Audio","Streaming","Mixeur"],ports:[p("xi","in",PT.XLR_F,"XLR In 1-4 (micro/ligne)"),p("ji","in",PT.JACK_IN,"Jack In 5-8"),p("usbc","out",PT.USBC_OUT,"USB-C (audio vers PC streaming)")],prereqs:["Alimentation 230V","Sources XLR ou Jack","Câble USB-C vers PC","Logiciel streaming OBS ou Streamlabs"]},
+
+  // ── ORDINATEURS & LOGICIELS ───────────────────────────────────
+  {id:"pc-streaming",cat:"computer",name:"PC Régie Streaming",sub:"Workstation Windows dédié streaming",icon:"💻",desc:"PC haute performance pour encoder, mixer et streamer en simultané.",tags:["Windows","OBS","vMix","NDI"],ports:[p("usb","in",PT.USB_IN,"USB 3.0 (cartes de capture)"),p("eth","in",PT.ETH_IN,"Ethernet Gigabit (réseau NDI)"),p("dp","out",PT.DP_OUT,"DisplayPort vers écrans régie"),p("hdmio","out",PT.HDMI_OUT,"HDMI vers moniteur")],prereqs:["CPU i9 ou Ryzen 9 (12+ cœurs min)","GPU NVIDIA pour encodage NVENC","32 Go RAM minimum","SSD NVMe pour enregistrement","Windows 10/11 Pro","Carte réseau Gigabit dédiée"]},
+  {id:"macbook-streaming",cat:"computer",name:"MacBook Pro M3 Pro",sub:"Laptop Apple pour streaming",icon:"💻",desc:"Encodage efficace Apple Silicon. OBS, Wirecast, Ecamm.",tags:["macOS","Apple Silicon","Portable","OBS"],ports:[p("usbc","in",PT.USBC_IN,"Thunderbolt 4 (capture + alimentation)"),p("hdmio","out",PT.HDMI_OUT,"HDMI 2.1 vers moniteur"),p("eth","in",PT.ETH_IN,"Ethernet via adaptateur (réseau NDI)")],prereqs:["Adaptateur USB-C multiport pour cartes de capture","Logiciel de streaming (OBS, Ecamm Live)","Disque externe SSD pour enregistrement ISO","Connexion Ethernet via hub Thunderbolt"]},
+  {id:"obs-studio",cat:"computer",name:"OBS Studio",sub:"Logiciel streaming/enregistrement open source",icon:"💻",desc:"Standard industrie du streaming live. Gratuit. Scènes, transitions, plugins.",tags:["Logiciel","Gratuit","Streaming","Enregistrement"],ports:[p("ndi","in",PT.NDI_IN,"NDI In (plugin obs-ndi)"),p("usb","in",PT.USB_IN,"Entrées capture USB")],prereqs:["PC Windows/Mac/Linux","Plugin obs-ndi pour caméras réseau","GPU pour encodage matériel NVENC/QuickSync","Sources configurées (caméras, écrans, médias)"]},
+  {id:"streamlabs",cat:"computer",name:"Streamlabs",sub:"Logiciel streaming orienté créateurs",icon:"💻",desc:"OBS-based. Alertes, overlays, chat intégré. Optimisé Twitch/YouTube.",tags:["Logiciel","Streaming","Alertes","Overlays"],ports:[p("usb","in",PT.USB_IN,"Entrées capture USB")],prereqs:["PC Windows ou Mac","Compte Twitch, YouTube ou Facebook Gaming","Sources vidéo configurées","Connexion Internet haut débit (min 10 Mbps upload)"]},
+  {id:"ecamm-live",cat:"computer",name:"Ecamm Live",sub:"Logiciel streaming Mac",icon:"💻",desc:"Streaming professionnel Mac. Interviews, écrans partagés, plugins.",tags:["macOS","Streaming","Interview"],ports:[p("usbc","in",PT.USBC_IN,"USB-C / Thunderbolt (cartes de capture)"),p("ndi","in",PT.NDI_IN,"NDI In")],prereqs:["macOS 12+","Caméra ou capture card","Abonnement Ecamm Live"]},
+
+  // ── MONITEURS RÉGIE ───────────────────────────────────────────
+  {id:"mon-4k-27",cat:"display",name:"Écran régie 4K 27 pouces",sub:"Moniteur PC UHD pour régie",icon:"🖥",desc:"4K UHD 27 pouces. Affichage programme, multiview et logiciels.",tags:["4K","Moniteur","Régie"],ports:[p("dp","in",PT.DP_IN,"DisplayPort In"),p("hdmi","in",PT.HDMI_IN,"HDMI In")],prereqs:["Source DisplayPort ou HDMI depuis PC","Support écran ou bras articulé"]},
+  {id:"mon-preview-1080",cat:"display",name:"Moniteur Preview/Programme 1080p",sub:"Moniteur broadcast pour prévisualisation",icon:"🖥",desc:"1080p full HD. Sortie HDMI ou SDI. Monitoring programme.",tags:["1080p","Preview","Programme"],ports:[p("hdmi","in",PT.HDMI_IN,"HDMI In"),p("sdi","in",PT.SDI_IN,"SDI In")],prereqs:["Sortie HDMI ou SDI depuis switcher","Pied ou rack monitor"]},
+  {id:"blackmagic-smartview",cat:"display",name:"Blackmagic SmartView 4K",sub:"Moniteur de confiance broadcast SDI",icon:"🖥",desc:"SmartView 4K. SDI et HDMI. Rack ou bureau.",tags:["4K","SDI","Broadcast","Rack"],ports:[p("sdi","in",PT.SDI_IN,"SDI In 6G"),p("hdmi","in",PT.HDMI_IN,"HDMI In")],prereqs:["Source SDI ou HDMI depuis switcher","Alimentation 230V","Rack 19 pouces si montage rack"]},
+  {id:"multiview",cat:"display",name:"Écran Multiview HDMI",sub:"Affichage 4 sources simultanées",icon:"🖥",desc:"Affiche 4 sources vidéo sur un seul écran. Idéal monitoring régie.",tags:["Multiview","HDMI","Monitoring"],ports:[p("hi1","in",PT.HDMI_IN,"HDMI In 1"),p("hi2","in",PT.HDMI_IN,"HDMI In 2"),p("hi3","in",PT.HDMI_IN,"HDMI In 3"),p("hi4","in",PT.HDMI_IN,"HDMI In 4"),p("ho","out",PT.HDMI_OUT,"HDMI Out vers moniteur")],prereqs:["4 sources HDMI","Moniteur HDMI pour affichage","Alimentation 5V ou secteur"]},
+
+  // ── RÉSEAU & CONNECTIVITÉ ─────────────────────────────────────
+  {id:"switch-gigabit-pro",cat:"network",name:"Switch Gigabit non-manageable",sub:"Commutateur réseau NDI / contrôle PTZ",icon:"🌐",desc:"Switch Gigabit simple pour NDI, contrôle PTZ IP et streaming.",tags:["Réseau","NDI","Gigabit"],ports:[p("eth1","in",PT.ETH_IN,"Port 1 — PC streaming"),p("eth2","in",PT.ETH_IN,"Port 2 — caméra NDI 1"),p("eth3","in",PT.ETH_IN,"Port 3 — caméra NDI 2"),p("eth4","out",PT.ETH_OUT,"Port 4 — vers router Internet"),p("eth5","out",PT.ETH_OUT,"Port 5 — autres appareils")],prereqs:["CAT6 sur tous les liens","Pas de WiFi mélangé avec NDI","QoS non requis si réseau dédié streaming"]},
+  {id:"router-4g",cat:"network",name:"Routeur 4G/5G de secours",sub:"Connexion Internet de backup",icon:"🌐",desc:"Routeur 4G/5G pour connexion de secours si fibre coupée.",tags:["4G","5G","Backup","Internet"],ports:[p("eth","out",PT.ETH_OUT,"Ethernet vers switch ou PC")],prereqs:["Carte SIM 4G/5G avec forfait data","Bonne réception signal","Configuration failover sur routeur principal"]},
+  {id:"ndi-bridge",cat:"network",name:"NDI Bridge",sub:"Transmission NDI via Internet",icon:"🌐",desc:"Envoie des flux NDI à travers Internet vers régie distante.",tags:["NDI","Internet","Distant"],ports:[p("ndi","in",PT.NDI_IN,"NDI In (local)"),p("ndi","out",PT.NDI_OUT,"NDI Out (distant via Internet)")],prereqs:["Logiciel NDI Bridge (gratuit)","Connexion Internet haut débit symétrique","Port UDP ouvert","NDI Tools sur les deux extrémités"]},
+
+  // ── AUDIO STREAMING ───────────────────────────────────────────
+  {id:"rode-podmic-usb",cat:"stream_audio",name:"Rode PodMic USB",sub:"Micro dynamique USB streaming",icon:"🎙",desc:"Dynamique cardioïde USB-C. Parfait streaming et podcast.",tags:["USB","Dynamique","Podcast","Streaming"],ports:[p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur")],prereqs:["Port USB-C","Bras micro recommandé","Traitement acoustique ou filtre anti-pop"]},
+  {id:"rode-nt-usb",cat:"stream_audio",name:"Rode NT-USB Mini",sub:"Condensateur USB streaming",icon:"🎙",desc:"Condensateur cardiöide compact USB-A. Plug & play.",tags:["USB","Condensateur","Streaming"],ports:[p("usb","out",PT.USB_OUT,"USB-A vers ordinateur")],prereqs:["Port USB-A ou adaptateur","Bras micro","Espace calme ou traitement acoustique"]},
+  {id:"shure-sm7b-usb",cat:"stream_audio",name:"Shure SM7dB",sub:"Dynamique broadcast USB-C + XLR",icon:"🎙",desc:"SM7B avec préampli intégré. USB-C ou XLR. Référence streaming.",tags:["USB-C","XLR","Broadcast","Streaming"],ports:[p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur"),p("xlr","out",PT.XLR_M,"XLR vers interface audio")],prereqs:["Bras micro","Port USB-C ou interface XLR","Traitement acoustique recommandé"]},
+  {id:"focusrite-solo",cat:"stream_audio",name:"Focusrite Scarlett Solo 4th gen",sub:"Interface audio USB-C 1 entrée XLR",icon:"🎙",desc:"1 préampli XLR + 1 Jack. USB-C. Idéale streaming solo.",tags:["USB-C","XLR","Interface","Streaming"],ports:[p("xi","in",PT.XLR_F,"XLR In (micro)"),p("ji","in",PT.JACK_IN,"Jack In (instrument)"),p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur")],prereqs:["Micro XLR (SM7B, SM58…)","Câble XLR","Câble USB-C vers PC","Logiciel DAW ou OBS"]},
+  {id:"wave-xlr",cat:"stream_audio",name:"Elgato Wave XLR",sub:"Interface XLR USB streaming",icon:"🎙",desc:"1 entrée XLR avec préampli. USB-C. Intégration Wave Link.",tags:["USB-C","XLR","Streaming"],ports:[p("xi","in",PT.XLR_F,"XLR In (micro)"),p("usbc","out",PT.USBC_OUT,"USB-C vers ordinateur")],prereqs:["Micro XLR","Câble XLR","Logiciel Wave Link","Câble USB-C"]},
+
+  // ── TALLY & INTERCOM ─────────────────────────────────────────
+  {id:"tally-arbiter",cat:"tally",name:"Tally Arbiter",sub:"Système tally universel open source",icon:"🔴",desc:"Centralise les tallys de tous les switchers (ATEM, vMix…). Raspberry Pi.",tags:["Tally","Open Source","ATEM","vMix"],ports:[p("eth","in",PT.ETH_IN,"Ethernet (LAN)"),p("talo","out",PT.TALLY_OUT,"Tally Out vers lumières cameras")],prereqs:["Raspberry Pi ou PC","Logiciel Tally Arbiter (gratuit)","Réseau local","Switcher ATEM ou vMix configuré"]},
+  {id:"hollyland-syscom",cat:"tally",name:"Hollyland Syscom 1000T",sub:"Intercom sans fil 1.9GHz",icon:"🔴",desc:"Intercom full-duplex sans fil. 1000m. 4 personnes.",tags:["Intercom","Sans fil","Régie"],ports:[p("xlr","in",PT.XLR_F,"XLR In (base station vers régie audio)")],prereqs:["Base station alimentée","Ceintures émetteur/récepteur pour chaque opérateur","Zone RF libre 1.9GHz"]},
+  {id:"clearcom-encore",cat:"tally",name:"Clear-Com FreeSpeak II",sub:"Intercom numérique sans fil DECT",icon:"🔴",desc:"Intercom DECT broadcast pro. Full duplex. Touring et régie.",tags:["Intercom","DECT","Pro","Broadcast"],ports:[p("xlr","in",PT.XLR_F,"XLR vers console ou table de mixage")],prereqs:["Base station DECT","Ceintures BP (beltpacks)","Casques intercom","Alimentation 230V"]},
+
+  // ── ACCESSOIRES RÉGIE ─────────────────────────────────────────
+  {id:"teleprompter",cat:"prompter",name:"Prompteur Parrot Teleprompter Pro",sub:"Prompteur tablette pour caméra",icon:"📋",desc:"Prompteur compact. Compatible iPad/tablette. Texte défilant.",tags:["Prompteur","iPad","Streaming"],ports:[],prereqs:["Tablette ou iPad","Application prompteur (Teleprompter+ etc.)","Support fixé devant caméra","Texte préparé"]},
+  {id:"greenscreen",cat:"prompter",name:"Fond vert / Chroma Key",sub:"Toile ou tissu pour fond virtuel",icon:"📋",desc:"Fond vert tissu ou papier pour incrustration virtuelle dans OBS/vMix.",tags:["Chroma Key","Fond vert","OBS"],ports:[],prereqs:["Éclairage uniforme sans ombres","Distance caméra-fond suffisante","Plugin Chroma Key dans OBS/vMix","Fond vert ou bleu"]},
+  {id:"streaming-lights",cat:"prompter",name:"Kit éclairage LED streaming",sub:"Panneau LED bi-color 2700-6500K",icon:"📋",desc:"Éclairage LED pour streaming. Bi-color, dimmable. 3 points recommandés.",tags:["Éclairage","LED","Streaming"],ports:[],prereqs:["Alimentation 230V","Trépieds ou fixation murale","Positionnement 3 points (key, fill, back)","Température couleur cohérente avec fond"]},
+  {id:"stream-deck",cat:"prompter",name:"Elgato Stream Deck XL",sub:"Contrôleur 32 touches LCD programmables",icon:"📋",desc:"32 touches LCD. Contrôle OBS, vMix, switcher, musique, alertes.",tags:["Contrôleur","OBS","vMix","Automatisation"],ports:[p("usb","out",PT.USB_OUT,"USB vers ordinateur")],prereqs:["PC Windows ou Mac","Logiciel Stream Deck","OBS ou vMix configuré","Plugin pour chaque intégration"]},
+  {id:"streaming-table",cat:"prompter",name:"Onduleur APC 1500VA",sub:"Alimentation secours régie",icon:"📋",desc:"UPS 1500VA pour régie. Protège PC, switcher, encodeur contre coupures.",tags:["UPS","Alimentation","Sécurité"],ports:[],prereqs:["Branchement de tous les appareils critiques","Test autonomie régulier","Batterie vérifiée annuellement"]},
+];
+
+// ═══════════════════════════════════════════════════
+// STATE + PERSISTENCE
+// ═══════════════════════════════════════════════════
+let S={nodes:[],wires:[],custom:[],favs:[],presets:[],hist:[],dark:false,tool:"select",sel:null,conn:null,lo:true,ro:true,leg:true,nid:1};
+let curSearch="",searchTmr=null;
+
+function loadS(){
+  try{
+    ["nodes","wires","custom","favs","presets","dark"].forEach(k=>{
+      const v=localStorage.getItem("av3_"+k);if(v!=null)S[k]=JSON.parse(v);
+    });
+    const ids=[...S.nodes,...S.wires].map(x=>parseInt(String(x.id).replace(/\D/g,""))||0);
+    S.nid=Math.max(0,...ids)+1;
+  }catch(e){console.warn(e)}
+}
+function sv(k){try{localStorage.setItem("av3_"+k,JSON.stringify(S[k]))}catch(e){}}
+function gid(p){return p+(S.nid++)}
+function pH(a){S.hist=[...S.hist.slice(-29),a]}
+function allI(){return[...DB,...S.custom]}
+function clone(x){return JSON.parse(JSON.stringify(x))}
+
+// ═══════════════════════════════════════════════════
+// FUZZY SEARCH
+// ═══════════════════════════════════════════════════
+function fuzz(s,q){
+  if(!q)return{m:true,sc:0};
+  const a=(s||"").toLowerCase(),b=q.toLowerCase().trim();
+  if(!b)return{m:true,sc:0};
+  if(a.includes(b))return{m:true,sc:100+b.length};
+  let i=0,j=0,sc=0,st=0;
+  while(i<a.length&&j<b.length){if(a[i]===b[j]){j++;st++;sc+=1+st;}else st=0;i++;}
+  return{m:j===b.length,sc};
+}
+function hl(t,q){
+  if(!q||!t)return String(t||"");
+  const s=String(t),idx=s.toLowerCase().indexOf(q.toLowerCase());
+  if(idx<0)return s;
+  return s.slice(0,idx)+"<mark>"+s.slice(idx,idx+q.length)+"</mark>"+s.slice(idx+q.length);
+}
+function filtI(){
+  let its=allI();
+  if(S.favs&&S.libFavs)its=its.filter(i=>S.favs.includes(i.id));
+  if(S.libCat&&S.libCat!=="all")its=its.filter(i=>i.cat===S.libCat);
+  if(curSearch){
+    its=its.map(i=>{
+      const n=fuzz(i.name,curSearch),sb=fuzz(i.sub||"",curSearch);
+      const tg=(i.tags||[]).some(t=>fuzz(t,curSearch).m);
+      return{...i,_s:Math.max(n.sc,sb.sc*.7,tg?10:0),_m:n.m||sb.m||tg};
+    }).filter(i=>i._m).sort((a,b)=>b._s-a._s);
+  }
+  return its;
+}
+
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+function toast(msg,type="info",dur=2700){
+  const el=document.createElement("div");
+  el.className="toast "+type;
+  const ic={info:"ℹ",ok:"✓",warn:"⚡",err:"⚠"}[type]||"ℹ";
+  el.innerHTML="<span>"+ic+"</span><span>"+msg+"</span>";
+  document.getElementById("ts").appendChild(el);
+  setTimeout(()=>{el.classList.add("out");setTimeout(()=>el.remove(),220)},dur);
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER NODES
+// ═══════════════════════════════════════════════════
+function renderAll(){renderNodes();renderWires();updateUI();if(typeof renderMinimap==='function')renderMinimap();}
+
+function getItem(n){return allI().find(i=>i.id===n.itemId)||{ports:[]}}
+
+function renderNodes(){
+  const layer=document.getElementById("nl");
+  Array.from(layer.children).forEach(el=>{if(!S.nodes.find(n=>n.id===el.dataset.nid))el.remove();});
+  S.nodes.forEach(n=>renderNode(n));
+}
+
+function renderNode(node){
+  const layer=document.getElementById("nl");
+  let el=layer.querySelector("[data-nid=\""+node.id+"\"]");
+  const item=getItem(node);
+  const cat=CATS[node.cat]||{color:"#334155"};
+  const warns=nodeWarns(node,S.nodes,S.wires);
+  const hasErr=warns.some(w=>w.lv==="err");
+  const hasWarn=!hasErr&&warns.some(w=>w.lv==="warn");
+  const isConn=!!S.conn;
+
+  if(!el){
+    el=document.createElement("div");
+    el.className="node";
+    el.dataset.nid=node.id;
+    layer.appendChild(el);
+    attachDrag(el,node);
+  }
+  el.classList.toggle("sel",S.sel===node.id);
+  el.classList.toggle("nw",hasWarn);
+  el.classList.toggle("ne",hasErr);
+  el.style.left=node.x+"px";
+  el.style.top=node.y+"px";
+
+  let portsHTML="";
+  (item.ports||[]).forEach(port=>{
+    const isOut=port.dir==="out";
+    const lit=isOut?S.wires.some(w=>w.fn===node.id&&w.fp===port.id):S.wires.some(w=>w.tn===node.id&&w.tp===port.id);
+    const color=ptc(port.connType);
+    const typeLbl=ptl(port.connType);
+    let rowCls="pr"+(isOut?" out":"");
+    if(isConn&&S.conn){
+      if(S.conn.nodeId===node.id){rowCls+=" dis";}
+      else if(isOut){rowCls+=" dis";}
+      else{rowCls+=canConn(S.conn.portType,port.connType)?" cp":" ic";}
+    }
+    portsHTML+="<div class=\""+rowCls+"\" data-pid=\""+port.id+"\" data-ptype=\""+port.connType+"\" data-pdir=\""+port.dir+"\">"
+      +(isOut?"":"<div class=\"pd"+(lit?" lit":"")+"\" style=\"color:"+color+"\"></div>")
+      +"<span class=\"plbl\">"+port.label+"</span>"
+      +"<span class=\"ptyp\">"+typeLbl+"</span>"
+      +(isOut?"<div class=\"pd"+(lit?" lit":"")+"\" style=\"color:"+color+"\"></div>":"")
+      +"</div>";
+  });
+  if(!(item.ports||[]).length)portsHTML="<div class=\"nnp\">Aucun port — acoustique</div>";
+
+  let warnHTML=warns.map(w=>"<div class=\""+(w.lv==="err"?"nemsg":"nwmsg")+"\">"+w.msg+"</div>").join("");
+
+  const isConnSrc=S.conn&&S.conn.nodeId===node.id;
+  const isConnTgt=S.conn&&S.conn.nodeId!==node.id;
+  el.innerHTML="<div class=\"nbar\" style=\"background:"+(isConnSrc?"#f59e0b":cat.color)+";height:"+(isConnSrc||isConnTgt?"5":"3")+"px\">"+"</div>"
+    +"<div class=\"nhd\"><span class=\"nico\">"+node.icon+"</span><span class=\"nlbl\">"+node.label+"</span>"
+    +"<button class=\"ndel\" data-del=\""+node.id+"\" title=\"Supprimer\">✕</button></div>"
+    +"<div class=\"nports\">"+portsHTML+"</div>"+warnHTML;
+
+  const delBtn=el.querySelector("[data-del]");
+  delBtn.addEventListener("pointerdown",e=>{e.stopPropagation();e.preventDefault();removeNode(node.id);});
+  delBtn.addEventListener("touchend",e=>{e.stopPropagation();e.preventDefault();},{passive:false});
+  el.querySelectorAll(".pr").forEach(row=>{
+    if(row.classList.contains("dis")||row.classList.contains("ic"))return;
+    const pid=row.dataset.pid, ptype=row.dataset.ptype, pdir=row.dataset.pdir;
+    function portActivate(e){
+      e.stopPropagation();
+      e.preventDefault();
+      if(S.conn && !_drag.active){ handlePort(node.id,pid,ptype,pdir); return; }
+      startPortDrag(e, node.id, pid, ptype, pdir);
+    }
+    row.addEventListener("pointerdown", e=>{ if(e.pointerType!=="touch") portActivate(e); });
+    row.addEventListener("touchstart",  e=>portActivate(e), {passive:false});
+  });
+}
+
+function attachDrag(el,node){
+  el.addEventListener("pointerdown",e=>{
+    if(e.target.closest("[data-del]")||e.target.closest(".pr"))return;
+    e.preventDefault();
+    if(S.tool!=="select"){selectNode(node.id);return;}
+    const sx=e.clientX,sy=e.clientY,ox=node.x,oy=node.y;
+    let moved=false;
+    el.setPointerCapture(e.pointerId);
+    function mv(me){
+      const dx=me.clientX-sx,dy=me.clientY-sy;
+      if(!moved&&Math.hypot(dx,dy)<6)return;
+      if(!moved){moved=true;document.body.classList.add("dragging");}
+      node.x=Math.max(0,ox+dx/Z.scale);node.y=Math.max(0,oy+dy/Z.scale);
+      el.style.left=node.x+"px";el.style.top=node.y+"px";
+      renderWires();
+    }
+    function up(){
+      document.body.classList.remove("dragging");
+      if(!moved){selectNode(node.id);}  // tap = select only, no side effects
+      else{sv("nodes");}
+      el.removeEventListener("pointermove",mv);
+      el.removeEventListener("pointerup",up);
+    }
+    el.addEventListener("pointermove",mv);
+    el.addEventListener("pointerup",up);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// WIRES
+// ═══════════════════════════════════════════════════
+let tmpPath=null;
+
+function portCtr(nodeId,portId){
+  const el=document.querySelector("[data-nid=\""+nodeId+"\"] [data-pid=\""+portId+"\"] .pd");
+  if(!el)return null;
+  // #sl is inside #stage which has the transform — getBoundingClientRect is in screen coords
+  // We need coords relative to #sl (which is same as #stage = same origin as canvas)
+  const pr=el.getBoundingClientRect();
+  const cr=document.getElementById("cv").getBoundingClientRect();
+  // Convert screen coords to stage (unzoomed) coords
+  return{
+    x:(pr.left+pr.width/2-cr.left-Z.ox)/Z.scale,
+    y:(pr.top+pr.height/2-cr.top-Z.oy)/Z.scale
+  };
+}
+
+function mkSvg(tag,attrs){
+  const el=document.createElementNS("http://www.w3.org/2000/svg",tag);
+  Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
+  return el;
+}
+
+function bez(x1,y1,x2,y2){const cx=(x1+x2)/2;return"M"+x1+","+y1+" C"+cx+","+y1+" "+cx+","+y2+" "+x2+","+y2;}
+
+function renderWires(){
+  const svg=document.getElementById("sl");
+  svg.querySelectorAll("[data-wire]").forEach(e=>e.remove());
+  S.wires.forEach(w=>{
+    const from=portCtr(w.fn,w.fp),to=portCtr(w.tn,w.tp);
+    if(!from||!to)return;
+    const cab=CABLES[w.cable]||CABLES.def;
+    const d=bez(from.x,from.y,to.x,to.y);
+    const g=mkSvg("g",{"data-wire":w.id});
+    const hit=mkSvg("path",{d,stroke:"transparent","stroke-width":"16",fill:"none",style:"pointer-events:stroke;cursor:pointer"});
+    hit.addEventListener("dblclick",()=>removeWire(w.id));
+    hit.addEventListener("mouseenter",()=>showWireTip(w,from,to));
+    hit.addEventListener("mouseleave",()=>hideWireTip());
+    // Mobile: tap wire shows tip + confirm button; long-press deletes
+    let wireLp=null;
+    hit.addEventListener("touchstart",e=>{
+      e.stopPropagation();
+      wireLp=setTimeout(()=>{wireLp=null;if(confirm("Supprimer cette connexion "+((CABLES[w.cable]||CABLES.def).l)+" ?"))removeWire(w.id);},600);
+    },{passive:true});
+    hit.addEventListener("touchend",e=>{if(wireLp){clearTimeout(wireLp);wireLp=null;}},{passive:true});
+    hit.addEventListener("touchmove",e=>{if(wireLp){clearTimeout(wireLp);wireLp=null;}},{passive:true});
+    const path=mkSvg("path",{d,stroke:cab.c,"stroke-width":"2.5",fill:"none",opacity:".9","marker-end":"url(#"+cab.m+")"});
+    g.appendChild(hit);g.appendChild(path);svg.appendChild(g);
+  });
+}
+
+let wireTip=null;
+function showWireTip(w,from,to){
+  hideWireTip();
+  const svg=document.getElementById("sl"),cab=CABLES[w.cable]||CABLES.def;
+  const mx=(from.x+to.x)/2,my=(from.y+to.y)/2;
+  const txt=cab.l+" · 2×clic pour supprimer";
+  const g=mkSvg("g",{"data-wtip":"1"});
+  const bg=mkSvg("rect",{x:mx-50,y:my-10,width:100,height:20,rx:5,fill:"#101b30",stroke:cab.c,"stroke-width":"1",opacity:".95"});
+  const t=mkSvg("text",{x:mx,y:my+4,"text-anchor":"middle",fill:cab.c,"font-size":"10","font-family":"JetBrains Mono,monospace"});
+  t.textContent=txt;g.appendChild(bg);g.appendChild(t);svg.appendChild(g);wireTip=g;
+}
+function hideWireTip(){if(wireTip){wireTip.remove();wireTip=null;}}
+
+document.getElementById("cv").addEventListener("mousemove",e=>{
+  if(!S.conn)return;
+  const from=portCtr(S.conn.nodeId,S.conn.portId);if(!from)return;
+  const cr=document.getElementById("cv").getBoundingClientRect();
+  // Convert mouse to stage coords
+  const tx=(e.clientX-cr.left-Z.ox)/Z.scale;
+  const ty=(e.clientY-cr.top-Z.oy)/Z.scale;
+  const d=bez(from.x,from.y,tx,ty);
+  const svg=document.getElementById("sl");
+  if(!tmpPath){tmpPath=mkSvg("path",{fill:"none","stroke-dasharray":"7 3",opacity:".8","pointer-events":"none"});svg.appendChild(tmpPath);}
+  tmpPath.setAttribute("d",d);tmpPath.setAttribute("stroke",ptc(S.conn.portType));tmpPath.setAttribute("stroke-width","2.5");
+});
+
+function clearTmp(){if(tmpPath){tmpPath.remove();tmpPath=null;}}
+
+// ═══════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════
+function addNode(itemId,x,y){
+  const item=allI().find(i=>i.id===itemId);if(!item)return;
+  const cat=CATS[item.cat]||{};
+  const cv=document.getElementById("cv"),r=cv.getBoundingClientRect();
+  const node={id:gid("n"),itemId,label:item.name,icon:item.icon||cat.icon||"📦",cat:item.cat,
+    x:x!==undefined?Math.max(0,x-80):r.width/2-80+(Math.random()*140-70),
+    y:y!==undefined?Math.max(0,y-30):r.height/2-30+(Math.random()*100-50)};
+  pH({a:"add",node:clone(node)});S.nodes.push(node);sv("nodes");
+  selectNode(node.id);renderNodes();renderWires();updateUI();
+  toast(item.name+" ajouté","ok",1300);
+}
+
+function removeNode(id){
+  const node=S.nodes.find(n=>n.id===id);if(!node)return;
+  const aff=S.wires.filter(w=>w.fn===id||w.tn===id);
+  pH({a:"remNode",node:clone(node),wires:clone(aff)});
+  S.nodes=S.nodes.filter(n=>n.id!==id);S.wires=S.wires.filter(w=>w.fn!==id&&w.tn!==id);
+  if(S.sel===id)S.sel=null;
+  document.querySelector("[data-nid=\""+id+"\"]")?.remove();
+  sv("nodes");sv("wires");renderWires();updateUI();renderProps();
+  toast("Élément supprimé","info",1100);
+}
+
+function selectNode(id){
+  const prev=S.sel;S.sel=id;
+  if(prev){const el=document.querySelector("[data-nid=\""+prev+"\"]");if(el)el.classList.remove("sel");}
+  if(id){const el=document.querySelector("[data-nid=\""+id+"\"]");if(el)el.classList.add("sel");}
+  renderProps();document.getElementById("bEdit").style.display=id?"":"none";
+
+}
+
+// ── DRAG-TO-CONNECT ENGINE ────────────────────────────────────
+// Key insight: capture pointer on DOCUMENT (not on the row) so
+// elementFromPoint works correctly at release.
+let _drag={active:false,nodeId:null,portId:null,portType:null,portDir:null,
+           fromX:0,fromY:0,moved:false,pid:null};
+
+function startPortDrag(e, nodeId, portId, portType, portDir){
+  e.stopPropagation();
+  e.preventDefault();
+
+  // 1. Build compatible port list with their screen positions (before any DOM change)
+  const targets = [];
+  document.querySelectorAll(".pr").forEach(r=>{
+    const nid = r.closest("[data-nid]")?.dataset.nid;
+    if(!nid || nid===nodeId) return;
+    const pt=r.dataset.ptype, pd=r.dataset.pdir;
+    if(!pt) return;
+    const ok = (portDir!=="in" && pd==="in" && canConn(portType,pt)) ||
+               (portDir==="in"  && pd!=="in"  && canConn(pt,portType));
+    if(!ok) return;
+    const rect = r.getBoundingClientRect();
+    targets.push({
+      el:r, nodeId:nid,
+      portId:r.dataset.pid, portType:pt, portDir:pd,
+      cx: rect.left + rect.width/2,
+      cy: rect.top  + rect.height/2
+    });
+    r.classList.add("drop-ok");
+  });
+  // dim incompatible
+  document.querySelectorAll(".pr:not(.drop-ok)").forEach(r=>{
+    const nid=r.closest("[data-nid]")?.dataset.nid;
+    if(nid && nid!==nodeId) r.classList.add("drop-no");
+  });
+
+  // 2. Snapshot source port position
+  const srcPos = portCtr(nodeId, portId);
+  if(!srcPos){ clearPortHighlights(); return; }
+
+  S.conn = {nodeId, portId, portType, portDir};
+  showConnBanner();
+
+  let moved = false, lastX = e.clientX, lastY = e.clientY, prevBest = null;
+
+  // 3. Find closest compatible target within snap radius
+  const SNAP = 80; // px — generous for touch
+  function bestTarget(cx, cy){
+    let best=null, bd=Infinity;
+    targets.forEach(t=>{
+      const d = Math.hypot(cx-t.cx, cy-t.cy);
+      if(d < SNAP && d < bd){ bd=d; best=t; }
+    });
+    return best;
+  }
+
+  // 4. Draw temp wire
+  function drawWire(cx, cy){
+    const cr = document.getElementById("cv").getBoundingClientRect();
+    const tx = (cx - cr.left - Z.ox) / Z.scale;
+    const ty = (cy - cr.top  - Z.oy) / Z.scale;
+    const svg = document.getElementById("sl");
+    if(!tmpPath){
+      tmpPath = mkSvg("path",{fill:"none","stroke-dasharray":"8 4",
+        opacity:".9","pointer-events":"none","stroke-linecap":"round"});
+      svg.appendChild(tmpPath);
+    }
+    tmpPath.setAttribute("d", bez(srcPos.x, srcPos.y, tx, ty));
+    tmpPath.setAttribute("stroke", ptc(portType));
+    tmpPath.setAttribute("stroke-width","3");
+  }
+
+  // 5. Hover highlight
+  function updateHover(cx, cy){
+    const t = bestTarget(cx, cy);
+    if(prevBest && prevBest!==t) prevBest.el.classList.remove("drop-hover");
+    if(t){ t.el.classList.add("drop-hover"); }
+    prevBest = t;
+  }
+
+  // 6. Finish: connect or cancel
+  function finish(cx, cy){
+    cleanup();
+    if(!moved){ doTap(); return; }
+    // Update target positions at release time (in case scroll happened)
+    targets.forEach(t=>{
+      const r=t.el.getBoundingClientRect();
+      t.cx=r.left+r.width/2; t.cy=r.top+r.height/2;
+    });
+    const t = bestTarget(cx, cy);
+    if(t) connectPorts(nodeId,portId,portType,portDir, t.nodeId,t.portId,t.portType,t.portDir);
+    else   toast("Approchez un port en surbrillance verte","info",1800);
+  }
+
+  function doTap(){
+    S.conn={nodeId,portId,portType,portDir};
+    document.body.classList.add("cm");
+    document.getElementById("cv").classList.add("cm");
+    showConnBanner();
+    renderNodes();
+  }
+
+  function cleanup(){
+    moved = false;
+    clearTmp();
+    clearPortHighlights();
+    cancelConn();
+    document.removeEventListener("touchmove", onTMove, {passive:false});
+    document.removeEventListener("touchend",  onTEnd,  {passive:false});
+    document.removeEventListener("touchcancel", onTEnd, {passive:false});
+    document.removeEventListener("mousemove", onMMove);
+    document.removeEventListener("mouseup",   onMUp);
+  }
+
+  // 7. Touch handlers — use changedTouches on end!
+  function onTMove(ev){
+    ev.preventDefault();
+    moved = true;
+    const t = ev.touches[0];
+    lastX=t.clientX; lastY=t.clientY;
+    drawWire(lastX, lastY);
+    updateHover(lastX, lastY);
+  }
+  function onTEnd(ev){
+    ev.preventDefault();
+    // changedTouches[0] = the finger that was lifted
+    if(ev.changedTouches && ev.changedTouches[0]){
+      lastX = ev.changedTouches[0].clientX;
+      lastY = ev.changedTouches[0].clientY;
+    }
+    finish(lastX, lastY);
+  }
+
+  // 8. Mouse handlers
+  function onMMove(ev){
+    moved = true;
+    lastX=ev.clientX; lastY=ev.clientY;
+    drawWire(lastX, lastY);
+    updateHover(lastX, lastY);
+  }
+  function onMUp(ev){
+    finish(ev.clientX, ev.clientY);
+  }
+
+  // 9. Attach to document (not row) — works even when finger leaves the source
+  if(e.pointerType==="touch" || e.type==="touchstart"){
+    document.addEventListener("touchmove",   onTMove, {passive:false});
+    document.addEventListener("touchend",    onTEnd,  {passive:false});
+    document.addEventListener("touchcancel", onTEnd,  {passive:false});
+  } else {
+    document.addEventListener("mousemove", onMMove);
+    document.addEventListener("mouseup",   onMUp);
+  }
+}
+
+function connectPorts(fnid,fpid,ftype,fdir,tnid,tpid,ttype,tdir){
+  // Normalise: out→in
+  if(fdir==="in"){
+    [fnid,tnid]=[tnid,fnid];[fpid,tpid]=[tpid,fpid];
+    [ftype,ttype]=[ttype,ftype];[fdir,tdir]=[tdir,fdir];
+  }
+  if(fdir===tdir){toast("Reliez une sortie ▶ vers une entrée ◀","warn",1800);return;}
+  if(!canConn(ftype,ttype)){
+    const fl=ptl(ftype).replace("▶","").trim(),tl=ptl(ttype).replace("◀","").trim();
+    toast("Incompatible : "+fl+" ↛ "+tl,"err",2200);return;
+  }
+  if(S.wires.find(w=>(w.fn===fnid&&w.fp===fpid&&w.tn===tnid&&w.tp===tpid)||
+                      (w.fn===tnid&&w.fp===tpid&&w.tn===fnid&&w.tp===fpid))){
+    toast("Connexion déjà présente","warn",1200);return;
+  }
+  const cable=cableType(ftype,ttype);
+  const wire={id:gid("w"),fn:fnid,fp:fpid,tn:tnid,tp:tpid,cable};
+  pH({a:"addWire",wire:clone(wire)});S.wires.push(wire);sv("wires");
+  renderNodes();renderWires();updateUI();
+  const cab=CABLES[cable]||{l:cable};
+  toast("✓ "+cab.l+" connecté","ok",1000);
+  [fnid,tnid].forEach(nid=>{
+    const nd=S.nodes.find(n=>n.id===nid);if(!nd)return;
+    nodeWarns(nd,S.nodes,S.wires).forEach(w=>{
+      setTimeout(()=>toast(w.msg,w.lv==="err"?"err":"warn",3500),300);
+    });
+  });
+}
+
+function highlightCompatPorts(srcNodeId,srcType,srcDir){
+  document.querySelectorAll(".pr").forEach(r=>{
+    const nid=r.closest("[data-nid]")?.dataset.nid;
+    if(!nid||nid===srcNodeId)return;
+    const ptype=r.dataset.ptype,pdir=r.dataset.pdir;
+    if(!ptype)return;
+    const compat=(srcDir!=="in"&&pdir==="in"&&canConn(srcType,ptype))||
+                 (srcDir==="in"&&pdir!=="in"&&canConn(ptype,srcType));
+    r.classList.toggle("drop-ok",compat);
+    r.classList.toggle("drop-no",!compat);
+  });
+}
+function clearPortHighlights(){
+  document.querySelectorAll(".pr.drop-ok,.pr.drop-no,.pr.drop-hover")
+    .forEach(r=>r.classList.remove("drop-ok","drop-no","drop-hover"));
+}
+
+function handlePort(nodeId,portId,portConnType,portDir){
+  // Two-tap fallback: called when user taps a 2nd port after starting connection
+  if(!S.conn){
+    // Should not reach here via tap anymore (startPortDrag handles it)
+    S.conn={nodeId,portId,portType:portConnType,portDir};
+    document.body.classList.add("cm");document.getElementById("cv").classList.add("cm");
+    highlightCompatPorts(nodeId,portConnType,portDir);
+    showConnBanner();renderNodes();return;
+  }
+  if(S.conn.nodeId===nodeId&&S.conn.portId===portId){cancelConn();return;}
+  if(S.conn.nodeId===nodeId){toast("Choisissez un port sur un autre élément","warn",1400);return;}
+  // Complete the connection
+  connectPorts(S.conn.nodeId,S.conn.portId,S.conn.portType,S.conn.portDir||"out",
+               nodeId,portId,portConnType,portDir);
+  cancelConn();
+}
+
+function showConnBanner(){
+  const b=document.getElementById("conn-banner");if(b)b.style.display="block";
+  const cancelBtn=document.getElementById("conn-cancel");
+  cancelBtn.addEventListener("click",e=>{e.stopPropagation();cancelConn();});
+  cancelBtn.addEventListener("touchend",e=>{e.stopPropagation();e.preventDefault();cancelConn();},{passive:false});
+}
+function hideConnBanner(){
+  const b=document.getElementById("conn-banner");if(b)b.style.display="none";
+}
+function cancelConn(){S.conn=null;clearTmp();document.body.classList.remove("cm");document.getElementById("cv").classList.remove("cm");hideConnBanner();clearPortHighlights();renderNodes();}
+
+function removeWire(id){
+  const w=S.wires.find(x=>x.id===id);if(!w)return;
+  pH({a:"remWire",wire:clone(w)});S.wires=S.wires.filter(x=>x.id!==id);sv("wires");
+  renderNodes();renderWires();updateUI();toast("Connexion supprimée","info",1100);
+}
+
+function undoAction(){
+  const last=S.hist[S.hist.length-1];
+  if(!last){toast("Rien à annuler","warn",1200);return;}
+  S.hist=S.hist.slice(0,-1);
+  if(last.a==="add"){S.nodes=S.nodes.filter(n=>n.id!==last.node.id);S.wires=S.wires.filter(w=>w.fn!==last.node.id&&w.tn!==last.node.id);document.querySelector("[data-nid=\""+last.node.id+"\"]")?.remove();}
+  else if(last.a==="remNode"){S.nodes.push(last.node);S.wires.push(...(last.wires||[]));}
+  else if(last.a==="addWire"){S.wires=S.wires.filter(w=>w.id!==last.wire.id);}
+  else if(last.a==="remWire"){S.wires.push(last.wire);}
+  sv("nodes");sv("wires");renderNodes();renderWires();updateUI();toast("Annulé","info",1000);
+}
+
+function clearCanvas(){
+  if(!S.nodes.length&&!S.wires.length)return;
+  if(!confirm("Effacer tout le synoptique ?"))return;
+  S.nodes=[];S.wires=[];S.sel=null;cancelConn();
+  document.getElementById("nl").innerHTML="";
+  sv("nodes");sv("wires");renderWires();updateUI();renderProps();toast("Canvas effacé","info");
+}
+
+// ═══════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════
+function updateUI(){
+  const hasN=S.nodes.length>0;
+  document.getElementById("emp").style.display=hasN?"none":"flex";
+  document.getElementById("leg").style.display=S.leg&&hasN?"":"none";
+  const chip=document.getElementById("chip");
+  if(hasN){chip.style.display="";chip.textContent=S.nodes.length+" élément"+(S.nodes.length>1?"s":"")+" · "+S.wires.length+" connexion"+(S.wires.length>1?"s":"");}
+  else chip.style.display="none";
+}
+
+// ═══════════════════════════════════════════════════
+// LIBRARY
+// ═══════════════════════════════════════════════════
+function renderLib(){
+  const items=filtI();
+  renderLibInto(document.getElementById("ll"),items,false);
+  renderLibInto(document.getElementById("mLl"),items,true);
+  const cnt=items.length+" équipement"+(items.length>1?"s":"");
+  document.getElementById("lcnt").textContent=cnt;
+  const mc=document.getElementById("mLcnt");if(mc)mc.textContent=cnt;
+}
+
+function renderLibInto(container,items,mobile){
+  if(!container)return;container.innerHTML="";
+  items.forEach(item=>{
+    const cat=CATS[item.cat]||{},isFav=S.favs.includes(item.id);
+    const pc=(item.ports||[]).length;
+    const el=document.createElement("div");el.className="li";el.draggable=true;
+    el.innerHTML="<div class=\"liico\" style=\"box-shadow:inset 0 0 0 1px "+cat.color+"33\">"+(item.icon||cat.icon)+"</div>"
+      +"<div style=\"flex:1;min-width:0\">"
+      +"<div class=\"liname\">"+hl(item.name,curSearch)+"</div>"
+      +"<div class=\"lisub\">"+(item.sub||cat.label||"")+(pc?" <span style=\"color:#283848\">·"+pc+"p</span>":"")+"</div>"
+      +(item.phantom?"<span class=\"li48v\">48V</span>":"")
+      +"</div>"
+      +"<div class=\"liacts\"><button class=\"lab fb"+(isFav?" on":"")+"\" title=\"Favori\">★</button><button class=\"lab ab\" title=\"Ajouter\">+</button></div>";
+    el.querySelector(".fb").addEventListener("click",e=>{e.stopPropagation();toggleFav(item.id);});
+    el.querySelector(".ab").addEventListener("click",e=>{e.stopPropagation();addNode(item.id);if(mobile)document.getElementById("movLib").classList.remove("open");});
+    el.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",item.id);e.dataTransfer.effectAllowed="copy";});
+    container.appendChild(el);
+  });
+}
+
+function toggleFav(id){S.favs=S.favs.includes(id)?S.favs.filter(f=>f!==id):[...S.favs,id];sv("favs");document.getElementById("fCnt").textContent=S.favs.length;renderLib();}
+
+function renderCats(){
+  const el=document.getElementById("cats");el.innerHTML="";
+  const allB=document.createElement("button");
+  allB.className="cb"+((S.libCat||"all")==="all"?" on":"");
+  allB.style.background=(S.libCat||"all")==="all"?"#0891b2":"";
+  allB.textContent="Tout · "+allI().length;
+  allB.onclick=()=>{S.libCat="all";renderCats();renderLib();};
+  el.appendChild(allB);
+  const groups={};
+  Object.entries(CATS).forEach(([k,v])=>{if(!groups[v.group])groups[v.group]=[];groups[v.group].push({id:k,...v});});
+  Object.entries(groups).forEach(([g,cats])=>{
+    const lbl=document.createElement("span");lbl.className="cgl";lbl.textContent=g;el.appendChild(lbl);
+    cats.forEach(c=>{
+      const btn=document.createElement("button");
+      btn.className="cb"+(S.libCat===c.id?" on":"");
+      btn.style.background=S.libCat===c.id?c.color:(document.body.classList.contains("light")?"#f0f4f8":"#101b30");
+      btn.title=c.label;btn.textContent=c.icon;
+      btn.onclick=()=>{S.libCat=S.libCat===c.id?"all":c.id;renderCats();renderLib();};
+      el.appendChild(btn);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// PROPERTIES
+// ═══════════════════════════════════════════════════
+function renderProps(){
+  const html=buildProps();
+  document.getElementById("ps").innerHTML=html;
+  const m=document.getElementById("mPrSc");if(m)m.innerHTML=html;
+  renderPresets();
+}
+
+function buildProps(){
+  if(!S.sel)return"<div class=\"ep\"><div style=\"font-size:36px;opacity:.2\">🎛</div><div style=\"font-size:11.5px;color:#283848;margin-top:4px\">Sélectionnez un élément</div></div>";
+  const node=S.nodes.find(n=>n.id===S.sel);if(!node)return"";
+  const item=getItem(node),cat=CATS[node.cat]||{};
+  const myW=S.wires.filter(w=>w.fn===node.id||w.tn===node.id);
+  const warns=nodeWarns(node,S.nodes,S.wires);
+  let h="<div class=\"pc\" style=\"display:flex;align-items:flex-start;gap:9px\">"
+    +"<span style=\"font-size:25px;flex-shrink:0\">"+node.icon+"</span>"
+    +"<div style=\"flex:1;min-width:0\"><div style=\"font-size:13px;font-weight:600;word-break:break-word\">"+node.label+"</div>"
+    +"<div style=\"font-size:10px;color:#3a5070;margin-top:2px\">"+(item.sub||cat.label||"")+"</div>"
+    +"<div style=\"margin-top:4px\">"+(item.tags||[]).slice(0,5).map(t=>"<span class=\"tag\">"+t+"</span>").join("")+"</div>"
+    +"</div></div>";
+  if(item.desc)h+="<div style=\"margin-bottom:9px\"><div class=\"st\">Description</div><p style=\"font-size:11.5px;line-height:1.6;color:#5a7898\">"+item.desc+"</p></div>";
+  const specs=[];
+  if(item.freq)specs.push(["Fréquence",item.freq,""]);
+  if(item.phantom!==undefined)specs.push(["Phantom 48V",item.phantom?"REQUIS":"Non requis",item.phantom?"req":"ok"]);
+  if(specs.length){h+="<div class=\"st\">Caractéristiques</div><div class=\"pc\">";specs.forEach(([k,v,cls])=>h+="<div class=\"prow\"><span class=\"k\">"+k+"</span><span class=\"v "+cls+"\">"+v+"</span></div>");h+="</div>";}
+  const ports=item.ports||[];
+  if(ports.length){
+    h+="<div class=\"st\">Ports ("+ports.length+")</div><div class=\"pc\">";
+    ports.forEach(port=>{
+      const color=ptc(port.connType),lbl=ptl(port.connType);
+      h+="<div class=\"prow\"><span class=\"k\">"+(port.dir==="out"?"▶ Sortie":"◀ Entrée")+" <span style=\"color:"+color+";font-family:JetBrains Mono,monospace;font-size:8px\">"+lbl+"</span></span><span class=\"v\" style=\"font-size:10px;max-width:50%\">"+port.label+"</span></div>";
+    });
+    h+="</div>";
+  }
+  warns.forEach(w=>h+="<div class=\""+(w.lv==="err"?"berr":"bsec")+"\">"+w.msg+"</div>");
+  if((item.prereqs||[]).length){h+="<div class=\"bsec\">⚠ Prérequis</div><div class=\"prl\">";item.prereqs.forEach(pr=>h+="<div class=\"pri\"><span style=\"color:#283848\">›</span>"+pr+"</div>");h+="</div>";}
+  h+="<div class=\"st\">Connexions actives ("+myW.length+")</div>";
+  if(!myW.length){h+="<div style=\"font-size:11px;color:#283848;margin-bottom:8px\">Aucune — cliquez ⚡ Relier pour connecter</div>";}
+  else{myW.forEach(w=>{const othId=w.fn===node.id?w.tn:w.fn,oth=S.nodes.find(n=>n.id===othId),cab=CABLES[w.cable]||CABLES.def;h+="<div class=\"ci\"><div style=\"width:7px;height:7px;border-radius:50%;background:"+cab.c+";flex-shrink:0\"></div><span style=\"font-size:9px;font-family:JetBrains Mono,monospace;color:#3a5070\">"+cab.l+"</span><span style=\"font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1\"> → "+(oth?.label||"?")+"</span></div>";});}
+  return h;
+}
+
+// ═══════════════════════════════════════════════════
+// PRESETS / EXPORT
+// ═══════════════════════════════════════════════════
+function savePreset(){const name=prompt("Nom du preset :");if(!name?.trim())return;const pr={id:"p"+Date.now(),name:name.trim().slice(0,40),nodes:clone(S.nodes),wires:clone(S.wires),date:new Date().toISOString()};S.presets.push(pr);sv("presets");renderPresets();toast("\""+pr.name+"\" sauvegardé","ok");}
+function loadPreset(pid){const pr=S.presets.find(x=>x.id===pid);if(!pr)return;S.nodes=clone(pr.nodes);S.wires=clone(pr.wires);S.sel=null;document.getElementById("nl").innerHTML="";sv("nodes");sv("wires");renderAll();toast("\""+pr.name+"\" chargé","ok");}
+function delPreset(pid){S.presets=S.presets.filter(p=>p.id!==pid);sv("presets");renderPresets();}
+function renderPresets(){
+  const sec=document.getElementById("prsec"),list=document.getElementById("prList");
+  if(!S.presets.length){sec.style.display="none";return;}sec.style.display="block";
+  list.innerHTML=S.presets.map(p=>"<div class=\"pri2\" data-pid=\""+p.id+"\"><span style=\"flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">"+p.name+"</span><button class=\"prdel\" data-del=\""+p.id+"\">✕</button></div>").join("");
+  list.querySelectorAll(".pri2").forEach(el=>{el.addEventListener("click",e=>{if(!e.target.closest("[data-del]"))loadPreset(el.dataset.pid);});el.querySelector("[data-del]").addEventListener("click",e=>{e.stopPropagation();delPreset(el.dataset.del);});});
+}
+function exportJSON(){try{const blob=new Blob([JSON.stringify({version:"3.0",date:new Date().toISOString(),nodes:S.nodes,wires:S.wires},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="synoptic_"+new Date().toISOString().slice(0,10)+".json";document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),1e3);toast("JSON exporté","ok");}catch{toast("Erreur export","err");}}
+
+// ═══════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════
+function openModal(html){document.getElementById("mr").innerHTML="<div class=\"ov\" id=\"ov\">"+html+"</div>";document.getElementById("ov").addEventListener("click",e=>{if(e.target===e.currentTarget)closeModal();});document.addEventListener("keydown",escCl);}
+function closeModal(){document.getElementById("mr").innerHTML="";document.removeEventListener("keydown",escCl);}
+function escCl(e){if(e.key==="Escape")closeModal();}
+
+function openEditModal(){
+  const node=S.nodes.find(n=>n.id===S.sel);if(!node)return;
+  const item=getItem(node);
+  openModal("<div class=\"mod\"><div class=\"mh\"><div class=\"mtt\">Modifier — "+node.label+"</div><button class=\"mcl\" onclick=\"closeModal()\">✕</button></div>"
+    +"<div class=\"mb\"><div class=\"fi\"><label class=\"fl\">Nom affiché</label><input class=\"fin\" id=\"el\" value=\""+node.label+"\"></div>"
+    +"<div class=\"fi\"><label class=\"fl\">Description</label><textarea class=\"fin\" id=\"ed\" rows=\"3\" style=\"resize:none\">"+(item.desc||"")+"</textarea></div>"
+    +"<div class=\"fi\"><label class=\"fl\">Prérequis (1 par ligne)</label><textarea class=\"fin\" id=\"ep\" rows=\"5\" style=\"resize:none;font-family:JetBrains Mono,monospace;font-size:11px\">"+(item.prereqs||[]).join("\n")+"</textarea></div>"
+    +"</div><div class=\"mf\"><button class=\"mbb\" onclick=\"closeModal()\">Annuler</button><button class=\"mbb pr\" onclick=\"saveEdit()\">Sauvegarder</button></div></div>");
+}
+window.saveEdit=function(){
+  const node=S.nodes.find(n=>n.id===S.sel);if(!node)return;
+  const label=document.getElementById("el").value.trim()||node.label;
+  node.label=label;
+  const base=allI().find(i=>i.id===node.itemId)||{};
+  const upd={...base,desc:document.getElementById("ed").value.trim(),prereqs:document.getElementById("ep").value.split("\n").map(s=>s.trim()).filter(Boolean)};
+  const idx=S.custom.findIndex(i=>i.id===node.itemId);
+  if(idx>=0)S.custom[idx]=upd;else S.custom.push({...upd,id:node.itemId});
+  sv("nodes");sv("custom");closeModal();renderNodes();renderProps();toast("Sauvegardé","ok");
+};
+
+function openAddModal(){
+  openModal("<div class=\"mod\"><div class=\"mh\"><div class=\"mtt\">Ajouter équipement personnalisé</div><button class=\"mcl\" onclick=\"closeModal()\">✕</button></div>"
+    +"<div class=\"mb\"><div class=\"fi\"><label class=\"fl\">Nom *</label><input class=\"fin\" id=\"cn\" placeholder=\"ex: QSC K12.2\"></div>"
+    +"<div class=\"fg fi\"><div><label class=\"fl\">Catégorie</label><select class=\"fin\" id=\"cc\">"+Object.entries(CATS).map(([k,v])=>"<option value=\""+k+"\">"+v.label+"</option>").join("")+"</select></div>"
+    +"<div><label class=\"fl\">Sous-titre</label><input class=\"fin\" id=\"cs\" placeholder=\"Type / modèle\"></div></div>"
+    +"<div class=\"fi\"><label class=\"fl\">Description</label><textarea class=\"fin\" id=\"cd\" rows=\"2\" style=\"resize:none\"></textarea></div>"
+    +"<div class=\"fi\"><label class=\"fl\">Prérequis (1 par ligne)</label><textarea class=\"fin\" id=\"cpr\" rows=\"3\" style=\"resize:none;font-family:JetBrains Mono,monospace;font-size:11px\"></textarea></div>"
+    +"<div class=\"fi\"><label class=\"fl\">Tags (virgule)</label><input class=\"fin\" id=\"ct\"></div>"
+    +"<div class=\"fi\" style=\"display:flex;align-items:center;gap:8px\"><input type=\"checkbox\" id=\"cph\" style=\"width:15px;height:15px;accent-color:#0891b2\"><label for=\"cph\">Phantom 48V requis</label></div>"
+    +"</div><div class=\"mf\"><button class=\"mbb\" onclick=\"closeModal()\">Annuler</button><button class=\"mbb pr\" onclick=\"saveCustom()\">Ajouter</button></div></div>");
+}
+window.saveCustom=function(){
+  const name=document.getElementById("cn").value.trim();if(!name){toast("Nom requis","warn");return;}
+  const cat=document.getElementById("cc").value;
+  const item={id:"c_"+Date.now(),cat,name,sub:document.getElementById("cs").value.trim()||CATS[cat]?.label,icon:CATS[cat]?.icon||"📦",desc:document.getElementById("cd").value.trim(),phantom:document.getElementById("cph").checked,prereqs:document.getElementById("cpr").value.split("\n").map(s=>s.trim()).filter(Boolean),tags:document.getElementById("ct").value.split(",").map(s=>s.trim()).filter(Boolean),ports:[]};
+  S.custom.push(item);sv("custom");closeModal();renderCats();renderLib();toast("\""+name+"\" ajouté","ok");
+};
+
+// ═══════════════════════════════════════════════════
+// CANVAS DND + EVENTS
+// ═══════════════════════════════════════════════════
+const cv=document.getElementById("cv");
+cv.addEventListener("dragover",e=>e.preventDefault());
+// drop handled below with zoom compensation
+cv.addEventListener("click",e=>{if(e.target===e.currentTarget||["cv","nl","sl"].includes(e.target.id)){if(S.conn){cancelConn();return;}selectNode(null);}});
+// Mobile: tap on canvas bg cancels connection
+cv.addEventListener("touchend",e=>{
+  if(e.touches.length>0)return;
+  const t=_touches.tapTarget;
+  if(!_touches.moved&&(t===cv||t?.id==="nl"||t?.id==="stage"||t?.id==="sl"||t?.tagName==="svg")){
+    if(S.conn){cancelConn();return;}
+  }
+},{passive:true});
+
+// ── PINCH ZOOM + PAN ──────────────────────────────
+// ── ZOOM + PAN ENGINE ─────────────────────────────────────────
+const MIN_SCALE=0.08, MAX_SCALE=4;
+let Z={scale:1,ox:0,oy:0};
+
+function applyTransform(){
+  document.getElementById("stage").style.transform=
+    "translate("+Z.ox+"px,"+Z.oy+"px) scale("+Z.scale+")";
+  if(typeof renderMinimap==="function")renderMinimap();
+}
+
+function dist2(t){return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);}
+function mid2(t){return{x:(t[0].clientX+t[1].clientX)/2,y:(t[0].clientY+t[1].clientY)/2};}
+function cvRect(){return document.getElementById("cv").getBoundingClientRect();}
+
+// Touch state
+let _touches={count:0,pinching:false,lastDist:0,lmx:0,lmy:0,
+              panning:false,lpx:0,lpy:0,tapTime:0,tapTarget:null,moved:false};
+
+cv.addEventListener("touchstart",e=>{
+  // Don't intercept touches on zoom controls or minimap
+  if(e.target.closest("#zoom-bar")||e.target.closest("#minimap"))return;
+  e.preventDefault();
+  _touches.count=e.touches.length;
+  if(e.touches.length===1){
+    // Could be pan (on empty canvas) or node interaction — decide on move
+    _touches.panning=false;
+    _touches.moved=false;
+    _touches.lpx=e.touches[0].clientX;
+    _touches.lpy=e.touches[0].clientY;
+    _touches.tapTime=Date.now();
+    _touches.tapTarget=e.target;
+  }
+  if(e.touches.length===2){
+    _touches.pinching=true;
+    _touches.panning=false;
+    _touches.lastDist=dist2(e.touches);
+    const m=mid2(e.touches);
+    _touches.lmx=m.x;_touches.lmy=m.y;
+  }
+},{passive:false});
+
+cv.addEventListener("touchmove",e=>{
+  e.preventDefault();
+  if(e.touches.length===2&&_touches.pinching){
+    // ── PINCH: zoom + simultaneous pan ──────────────────────
+    const d=dist2(e.touches);
+    const m=mid2(e.touches);
+    const r=cvRect();
+    const px=m.x-r.left, py=m.y-r.top;
+    const ratio=d/_touches.lastDist;
+    const newScale=Math.min(MAX_SCALE,Math.max(MIN_SCALE,Z.scale*ratio));
+    const sf=newScale/Z.scale;
+    // Zoom around pinch midpoint
+    Z.ox=px-(px-Z.ox)*sf;
+    Z.oy=py-(py-Z.oy)*sf;
+    // Pan from midpoint movement
+    Z.ox+=m.x-_touches.lmx;
+    Z.oy+=m.y-_touches.lmy;
+    Z.scale=newScale;
+    _touches.lastDist=d;
+    _touches.lmx=m.x;_touches.lmy=m.y;
+    applyTransform();
+  } else if(e.touches.length===1&&!_touches.pinching){
+    // ── 1 FINGER: pan if on canvas bg, else let node drag handle it ──
+    const dx=e.touches[0].clientX-_touches.lpx;
+    const dy=e.touches[0].clientY-_touches.lpy;
+    if(!_touches.moved&&Math.hypot(dx,dy)>5) _touches.moved=true;
+    // Pan only when touching the canvas background (not a node)
+    const onBg=_touches.tapTarget===cv||
+               _touches.tapTarget?.id==="nl"||
+               _touches.tapTarget?.id==="stage"||
+               _touches.tapTarget?.id==="sl"||
+               _touches.tapTarget?.tagName==="svg";
+    if(_touches.moved&&onBg){
+      Z.ox+=dx;Z.oy+=dy;
+      applyTransform();
+    } else if(S.conn&&!onBg){
+      // Draw temp wire following finger during connect mode
+      const from=portCtr(S.conn.nodeId,S.conn.portId);
+      if(from){
+        const cr=cvRect();
+        const tx=(e.touches[0].clientX-cr.left-Z.ox)/Z.scale;
+        const ty=(e.touches[0].clientY-cr.top-Z.oy)/Z.scale;
+        const svg=document.getElementById("sl");
+        if(!tmpPath){tmpPath=mkSvg("path",{fill:"none","stroke-dasharray":"8 4",opacity:".85","pointer-events":"none"});svg.appendChild(tmpPath);}
+        tmpPath.setAttribute("d",bez(from.x,from.y,tx,ty));
+        tmpPath.setAttribute("stroke",ptc(S.conn.portType));
+        tmpPath.setAttribute("stroke-width","3");
+      }
+    }
+    _touches.lpx=e.touches[0].clientX;
+    _touches.lpy=e.touches[0].clientY;
+  }
+},{passive:false});
+
+cv.addEventListener("touchend",e=>{
+  if(e.touches.length<2){
+    _touches.pinching=false;
+    // Critical: reset 1-finger pan anchor to avoid position jump
+    if(e.touches.length===1){
+      _touches.lpx=e.touches[0].clientX;
+      _touches.lpy=e.touches[0].clientY;
+      _touches.moved=false; // require a new intentional move
+    }
+  }
+  if(e.touches.length===0){
+    _touches.panning=false;
+    _touches.count=0;
+    _touches.moved=false;
+  }
+},{passive:false});
+
+// ── MOUSE WHEEL ZOOM (desktop) ────────────────────────────────
+cv.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const r=cvRect();
+  const px=e.clientX-r.left, py=e.clientY-r.top;
+  const factor=e.deltaY<0?1.12:0.9;
+  const newScale=Math.min(MAX_SCALE,Math.max(MIN_SCALE,Z.scale*factor));
+  const sf=newScale/Z.scale;
+  Z.ox=px-(px-Z.ox)*sf;
+  Z.oy=py-(py-Z.oy)*sf;
+  Z.scale=newScale;
+  applyTransform();
+},{passive:false});
+
+// ── ZOOM BUTTONS ──────────────────────────────────────────────
+const zoomBar=document.createElement("div");
+zoomBar.id="zoom-bar";
+zoomBar.innerHTML='<button id="zIn" title="Zoomer">+</button><button id="zRst" title="Tout afficher">⊡</button><button id="zOut" title="Dézoomer">−</button>';
+cv.appendChild(zoomBar);
+function zoomAround(factor){
+  const r=cvRect(),cx=r.width/2,cy=r.height/2;
+  const ns=Math.min(MAX_SCALE,Math.max(MIN_SCALE,Z.scale*factor));
+  const sf=ns/Z.scale;
+  Z.ox=cx-(cx-Z.ox)*sf;Z.oy=cy-(cy-Z.oy)*sf;Z.scale=ns;
+  applyTransform();
+}
+["zIn","zOut","zRst"].forEach(id=>{
+  const btn=document.getElementById(id);
+  // Use both click (desktop) and touchend (mobile, avoids preventDefault on canvas)
+  const act=()=>{
+    if(id==="zIn") zoomAround(1.3);
+    else if(id==="zOut") zoomAround(0.75);
+    else fitAll();
+  };
+  btn.addEventListener("click",e=>{e.stopPropagation();act();});
+  btn.addEventListener("touchend",e=>{e.stopPropagation();e.preventDefault();act();},{passive:false});
+});
+// Minimap click
+document.getElementById("minimap").addEventListener("touchend",e=>{e.stopPropagation();e.preventDefault();fitAll();},{passive:false});
+
+// ── FIT ALL: zoom to show all nodes ──────────────────────────
+function fitAll(){
+  if(!S.nodes.length){Z.scale=1;Z.ox=0;Z.oy=0;applyTransform();renderMinimap();return;}
+  const r=cvRect();
+  const pad=60;
+  const xs=S.nodes.map(n=>n.x), ys=S.nodes.map(n=>n.y);
+  const minX=Math.min(...xs)-pad, minY=Math.min(...ys)-pad;
+  const maxX=Math.max(...xs)+220+pad, maxY=Math.max(...ys)+120+pad;
+  const W=maxX-minX, H=maxY-minY;
+  const sc=Math.min(MAX_SCALE,Math.max(MIN_SCALE,Math.min(r.width/W,r.height/H)*0.92));
+  Z.scale=sc;
+  Z.ox=(r.width-W*sc)/2-minX*sc;
+  Z.oy=(r.height-H*sc)/2-minY*sc;
+  applyTransform();
+  renderMinimap();
+}
+
+// ── MINIMAP ───────────────────────────────────────────────────
+const mmCanvas=document.getElementById("minimap").querySelector("canvas");
+const mmVp=document.getElementById("minimap-vp");
+document.getElementById("minimap").addEventListener("click",fitAll);
+
+function renderMinimap(){
+  const mm=document.getElementById("minimap");
+  if(!mm||!S.nodes.length){if(mmVp)mmVp.style.display="none";return;}
+  const mw=mm.clientWidth,mh=mm.clientHeight;
+  // World bounds
+  const pad=80;
+  const xs=S.nodes.map(n=>n.x),ys=S.nodes.map(n=>n.y);
+  const wx=Math.min(...xs)-pad,wy=Math.min(...ys)-pad;
+  const wW=Math.max(...xs)+220+pad-wx, wH=Math.max(...ys)+120+pad-wy;
+  const sc=Math.min(mw/wW,mh/wH)*0.9;
+  // Draw nodes
+  const ctx=mmCanvas.getContext("2d");
+  mmCanvas.width=mw;mmCanvas.height=mh;
+  ctx.clearRect(0,0,mw,mh);
+  const ox=(mw-wW*sc)/2, oy=(mh-wH*sc)/2;
+  S.nodes.forEach(n=>{
+    const cat=CATS[n.cat]||{color:"#94a3b8"};
+    ctx.fillStyle=cat.color+"cc";
+    ctx.beginPath();
+    ctx.roundRect((n.x-wx)*sc+ox,(n.y-wy)*sc+oy,Math.max(8,180*sc),Math.max(5,80*sc),2);
+    ctx.fill();
+  });
+  // Viewport indicator
+  const cvr=cvRect();
+  // Canvas visible area in world coords
+  const vx=(-Z.ox/Z.scale-wx)*sc+ox;
+  const vy=(-Z.oy/Z.scale-wy)*sc+oy;
+  const vw=(cvr.width/Z.scale)*sc;
+  const vh=(cvr.height/Z.scale)*sc;
+  mmVp.style.display="block";
+  mmVp.style.left=Math.max(0,vx)+"px";
+  mmVp.style.top=Math.max(0,vy)+"px";
+  mmVp.style.width=Math.min(mw,vw)+"px";
+  mmVp.style.height=Math.min(mh,vh)+"px";
+}
+
+// ── DRAG-DROP from library with zoom compensation ─────────────
+cv.addEventListener("drop",e=>{
+  e.preventDefault();
+  const id=e.dataTransfer.getData("text/plain");if(!id)return;
+  const r=cvRect();
+  const cx=(e.clientX-r.left-Z.ox)/Z.scale;
+  const cy=(e.clientY-r.top-Z.oy)/Z.scale;
+  addNode(id,cx+80,cy+30);
+});
+
+
+document.addEventListener("keydown",e=>{
+  const inF=["INPUT","TEXTAREA","SELECT"].includes(document.activeElement?.tagName);
+  if(e.key==="Escape"){cancelConn();if(!inF)selectNode(null);closeModal();return;}
+  if(inF)return;
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="z"){e.preventDefault();undoAction();return;}
+  if((e.key==="Delete"||e.key==="Backspace")&&S.sel){e.preventDefault();removeNode(S.sel);}
+  if(!e.metaKey&&!e.ctrlKey){if(e.key.toLowerCase()==="s")setTool("select");if(e.key.toLowerCase()==="c")setTool("connect");}
+});
+
+function setTool(t){
+  S.tool=t;if(t==="select")cancelConn();
+  ["bSel"].forEach(id=>{document.getElementById(id)?.classList.toggle("on",t==="select");});
+  
+  if(typeof updateMobNav==="function")updateMobNav();
+}
+
+function toggleLeft(){S.lo=!S.lo;document.getElementById("lp").classList.toggle("hide",!S.lo);document.getElementById("ptL").textContent=S.lo?"‹":"›";document.getElementById("ptL").style.left=(S.lo?266:0)+"px";setTimeout(renderWires,200);}
+function toggleRight(){S.ro=!S.ro;document.getElementById("rp").classList.toggle("hide",!S.ro);document.getElementById("ptR").textContent=S.ro?"›":"‹";document.getElementById("ptR").style.right=(S.ro?266:0)+"px";setTimeout(renderWires,200);}
+
+function applyTheme(){document.body.classList.toggle("light",!S.dark);document.getElementById("bTh").textContent=S.dark?"☀":"🌙";}
+
+// Wire events
+document.getElementById("sl").addEventListener("dblclick",e=>{const el=e.target.closest("[data-wire]");if(el)removeWire(el.dataset.wire);});
+
+// ═══════════════════════════════════════════════════
+// BUTTON EVENTS
+// ═══════════════════════════════════════════════════
+document.getElementById("bSel").onclick=()=>setTool("select");
+
+document.getElementById("bUnd").onclick=undoAction;
+document.getElementById("bLeg").onclick=()=>{S.leg=!S.leg;updateUI();};
+document.getElementById("bPS").onclick=savePreset;
+document.getElementById("bExp").onclick=exportJSON;
+document.getElementById("bPDF").onclick=()=>window.print();
+document.getElementById("bClr").onclick=clearCanvas;
+document.getElementById("bEdit").onclick=openEditModal;
+document.getElementById("bAdd").onclick=openAddModal;
+document.getElementById("bTh").onclick=()=>{S.dark=!S.dark;sv("dark");applyTheme();};
+document.getElementById("ptL").onclick=toggleLeft;
+document.getElementById("ptR").onclick=toggleRight;
+document.getElementById("mbSel").onclick=()=>setTool("select");
+
+document.getElementById("mbUnd").onclick=undoAction;
+document.getElementById("mbPS").onclick=savePreset;
+document.getElementById("mbExp").onclick=exportJSON;
+document.getElementById("mbClr").onclick=clearCanvas;
+
+// ── SEARCH ────────────────────────────────────────────────────
+const srchEl=document.getElementById("srch");
+const sClEl=document.getElementById("sCl");
+function updateSrchClear(v){sClEl.classList.toggle("vis",v.length>0);}
+srchEl.addEventListener("input",e=>{
+  clearTimeout(searchTmr);const v=e.target.value;
+  updateSrchClear(v);
+  searchTmr=setTimeout(()=>{curSearch=v;renderLib();},180);
+});
+// Lock canvas scroll when search focused (so keyboard doesn't pan)
+srchEl.addEventListener("focus",()=>{document.getElementById("cv").style.touchAction="none";});
+srchEl.addEventListener("blur",()=>{document.getElementById("cv").style.touchAction="none";});
+sClEl.addEventListener("click",()=>{srchEl.value="";curSearch="";updateSrchClear("");srchEl.focus();renderLib();});
+document.getElementById("bFav").addEventListener("click",()=>{S.libFavs=!S.libFavs;document.getElementById("bFav").classList.toggle("on",S.libFavs);renderLib();});
+
+// Mobile search
+const mSrchEl=document.getElementById("mSrch");
+const mSClEl=document.getElementById("mSCl");
+if(mSrchEl){
+  mSrchEl.addEventListener("input",e=>{
+    clearTimeout(searchTmr);const v=e.target.value;
+    if(mSClEl)mSClEl.style.display=v?"block":"none";
+    searchTmr=setTimeout(()=>{curSearch=v;renderMobLib();},180);
+  });
+  if(mSClEl)mSClEl.addEventListener("click",()=>{mSrchEl.value="";curSearch="";mSClEl.style.display="none";mSrchEl.focus();renderMobLib();});
+}
+
+// Mobile
+function showMobBtns(){
+  const mob=window.innerWidth<768;
+  // bML/bMP hidden always — bottom nav handles it on mobile
+  document.getElementById("bML").style.display="none";
+  document.getElementById("bMP").style.display="none";
+}
+function closeMov(id){document.getElementById(id).classList.remove("open");}
+function openMov(id){
+  // close others first
+  ["movLib","movPr","movMore"].forEach(x=>document.getElementById(x).classList.remove("open"));
+  document.getElementById(id).classList.add("open");
+}
+// Nav buttons
+document.getElementById("mbSel").onclick=()=>{setTool("select");updateMobNav();};
+document.getElementById("mbLib").onclick=()=>{openMov("movLib");renderMobLib();};
+document.getElementById("mbPr").onclick=()=>openMov("movPr");
+document.getElementById("mbUnd").onclick=undoAction;
+document.getElementById("mbMore").onclick=()=>openMov("movMore");
+// More menu
+document.getElementById("mbPS").onclick=()=>{savePreset();closeMov("movMore");};
+document.getElementById("mbExp").onclick=()=>{exportJSON();closeMov("movMore");};
+document.getElementById("mbPDF").onclick=()=>{window.print();closeMov("movMore");};
+document.getElementById("mbLeg").onclick=()=>{S.leg=!S.leg;updateUI();closeMov("movMore");};
+document.getElementById("mbTh").onclick=()=>{S.dark=!S.dark;sv("dark");applyTheme();closeMov("movMore");};
+document.getElementById("mbClr").onclick=()=>{closeMov("movMore");clearCanvas();};
+// Close on backdrop
+["mbkL","mbkP","mbkMore"].forEach(id=>document.getElementById(id).onclick=()=>document.getElementById(id).parentElement.classList.remove("open"));
+// Close panels
+document.getElementById("mLibCl").onclick=()=>closeMov("movLib");
+document.getElementById("mPrCl").onclick=()=>closeMov("movPr");
+// Mobile search
+document.getElementById("mSrch").addEventListener("input",e=>{clearTimeout(searchTmr);const v=e.target.value;searchTmr=setTimeout(()=>{curSearch=v;renderMobLib();},180);});
+
+function updateMobNav(){
+  document.getElementById("mbSel").classList.toggle("on",S.tool==="select");
+  }
+function renderMobLib(){
+  const items=filtI();
+  renderLibInto(document.getElementById("mLl"),items,true);
+  document.getElementById("mLcnt").textContent=items.length+" équipement"+(items.length>1?"s":"");
+  // Category bar (horizontal scrollable chips)
+  const bar=document.getElementById("mCatBar");
+  if(bar&&!bar.dataset.built){
+    bar.dataset.built="1";
+    const allB=document.createElement("button");
+    allB.className="cb"+(!(S.libCat&&S.libCat!=="all")?" on":"");
+    allB.style.cssText="padding:6px 12px;font-size:12px;border-radius:20px;white-space:nowrap";
+    allB.style.background=!(S.libCat&&S.libCat!=="all")?"#0891b2":(document.body.classList.contains("light")?"#f0f4f8":"#101b30");
+    allB.textContent="Tout";
+    allB.onclick=()=>{S.libCat="all";renderMobLib();};
+    bar.appendChild(allB);
+    Object.entries(CATS).forEach(([k,v])=>{
+      const b=document.createElement("button");
+      b.className="cb"+(S.libCat===k?" on":"");
+      b.style.cssText="padding:6px 10px;font-size:12px;border-radius:20px;white-space:nowrap";
+      b.style.background=S.libCat===k?v.color:(document.body.classList.contains("light")?"#f0f4f8":"#101b30");
+      b.title=v.label;b.textContent=v.icon+" "+v.label.split(" ")[0];
+      b.onclick=()=>{S.libCat=S.libCat===k?"all":k;bar.dataset.built="";renderMobLib();};
+      bar.appendChild(b);
+    });
+  }
+}
+
+window.addEventListener("resize",()=>{showMobBtns();renderWires();document.getElementById("ptL").style.left=(S.lo?266:0)+"px";document.getElementById("ptR").style.right=(S.ro?266:0)+"px";});
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+loadS();
+applyTheme();
+renderCats();
+renderLib();
+document.getElementById("fCnt").textContent=(S.favs||[]).length;
+renderAll();
+renderProps();
+showMobBtns();
+updateMobNav();
+// On load: fit all nodes in view if any
+if(S.nodes.length){setTimeout(fitAll,80);}
+else{renderMinimap();}
+
+// ── DOCUMENTATION PANEL ──────────────────────────────────────
+function openDoc(){document.getElementById("doc-ov").classList.add("open");buildToc();setTimeout(()=>document.getElementById("doc-search").focus&&null,100);}
+function closeDoc(){document.getElementById("doc-ov").classList.remove("open");}
+
+document.getElementById("doc-cls")?.addEventListener("click",closeDoc);
+document.getElementById("doc-ov")?.addEventListener("click",e=>{if(e.target===e.currentTarget)closeDoc();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.getElementById("doc-ov").classList.contains("open")){closeDoc();}});
+
+function buildToc(){
+  const toc=document.getElementById("doc-toc");
+  if(toc.dataset.built)return;
+  toc.dataset.built="1";
+  const headings=document.querySelectorAll("#doc-content h2");
+  headings.forEach(h=>{
+    const a=document.createElement("a");
+    a.className="toc-item";
+    a.textContent=h.textContent;
+    a.href="#";
+    a.onclick=e=>{e.preventDefault();h.scrollIntoView({behavior:"smooth",block:"start"});document.querySelectorAll(".toc-item").forEach(x=>x.classList.remove("active"));a.classList.add("active");};
+    toc.appendChild(a);
+  });
+  // Scroll spy
+  const content=document.getElementById("doc-content");
+  content.addEventListener("scroll",()=>{
+    const hs=[...document.querySelectorAll("#doc-content h2")];
+    const items=[...document.querySelectorAll(".toc-item")];
+    let active=0;
+    hs.forEach((h,i)=>{if(h.offsetTop-content.scrollTop<60)active=i;});
+    items.forEach((it,i)=>it.classList.toggle("active",i===active));
+  });
+}
+
+// Search in doc
+document.getElementById("doc-search")?.addEventListener("input",e=>{
+  const q=e.target.value.trim().toLowerCase();
+  const content=document.getElementById("doc-content");
+  // Remove old highlights
+  content.querySelectorAll(".doc-highlight").forEach(el=>{
+    const parent=el.parentNode;
+    parent.replaceChild(document.createTextNode(el.textContent),el);
+    parent.normalize();
+  });
+  if(!q)return;
+  // Highlight matches in text nodes
+  function walkAndHighlight(node){
+    if(node.nodeType===3){
+      const idx=node.textContent.toLowerCase().indexOf(q);
+      if(idx>=0){
+        const span=document.createElement("span");
+        span.className="doc-highlight";
+        const before=document.createTextNode(node.textContent.slice(0,idx));
+        const match=document.createTextNode(node.textContent.slice(idx,idx+q.length));
+        const after=document.createTextNode(node.textContent.slice(idx+q.length));
+        span.appendChild(match);
+        node.parentNode.replaceChild(after,node);
+        node.parentNode.insertBefore(span,after);
+        node.parentNode.insertBefore(before,span);
+      }
+    } else if(node.nodeType===1&&!["SCRIPT","STYLE","CODE","PRE"].includes(node.tagName)){
+      [...node.childNodes].forEach(walkAndHighlight);
+    }
+  }
+  walkAndHighlight(content);
+  // Scroll to first match
+  const first=content.querySelector(".doc-highlight");
+  if(first)first.scrollIntoView({behavior:"smooth",block:"center"});
+});
+
+document.getElementById("bDoc")?.addEventListener("click",openDoc);
+const mbDocBtn=document.getElementById("mbDoc");
+if(mbDocBtn){
+  mbDocBtn.addEventListener("click",()=>{closeMov("movMore");openDoc();});
+}
+
+console.log("SynOptic AV Pro v3 — Signal flow engine · "+DB.length+" équipements · Vanilla JS zero deps");
+</script>
+
+<!-- Documentation panel -->
+<div id="doc-ov">
+  <div id="doc-panel">
+    <div id="doc-hdr">
+      <div id="doc-title">📖 Documentation</div>
+      <div id="doc-search-wrap"><span id="doc-search-ic">🔍</span><input id="doc-search" type="text" placeholder="Rechercher…" autocomplete="off"></div>
+      <button id="doc-cls">✕</button>
+    </div>
+    <div id="doc-body">
+      <nav id="doc-toc" id="doc-toc"></nav>
+      <div id="doc-content"><h1>SynOptic AV Pro v3 — Documentation complète</h1>
+
+<blockquote>Version 3 · Fichier unique HTML · Zéro dépendance · Thème clair par défaut</blockquote>
+
+<hr>
+
+<h2 id="table-des-matires">Table des matières</h2>
+
+<li><a href="#présentation">Présentation</a></li>
+<li><a href="#démarrage-rapide">Démarrage rapide</a></li>
+<li><a href="#interface">Interface</a></li>
+<li><a href="#bibliothèque-déquipements">Bibliothèque d'équipements</a></li>
+<li><a href="#ajouter-des-éléments-au-canvas">Ajouter des éléments au canvas</a></li>
+<li><a href="#naviguer-dans-le-canvas">Naviguer dans le canvas</a></li>
+<li><a href="#créer-des-connexions-signal-flow">Créer des connexions (signal flow)</a></li>
+<li><a href="#supprimer-des-éléments">Supprimer des éléments</a></li>
+<li><a href="#panneau-propriétés">Panneau Propriétés</a></li>
+<li><a href="#presets-et-sauvegarde">Presets et sauvegarde</a></li>
+<li><a href="#export-et-impression">Export et impression</a></li>
+<li><a href="#thème-et-affichage">Thème et affichage</a></li>
+<li><a href="#raccourcis-clavier-pc">Raccourcis clavier (PC)</a></li>
+<li><a href="#référence-des-types-de-câbles">Référence des types de câbles</a></li>
+<li><a href="#avertissements-av-automatiques">Avertissements AV automatiques</a></li>
+<li><a href="#hébergement-et-déploiement">Hébergement et déploiement</a></li>
+
+<hr>
+
+<h2 id="prsentation">Présentation</h2>
+
+<p>SynOptic AV Pro v3 est un outil de conception de synoptiques audiovisuels et streaming. Il permet de créer des schémas de signal flow réalistes : micros, consoles, enceintes, amplificateurs, caméras PTZ, encodeurs, régie streaming, etc.</p>
+
+<p><strong>Points clés :</strong></p>
+<ul>
+<li>Fonctionne entièrement dans le navigateur, sans installation</li>
+<li>Thème clair par défaut, thème sombre disponible</li>
+<li>Optimisé desktop et smartphone</li>
+<li>128 équipements intégrés en base (dont 46 dédiés régie streaming)</li>
+<li>Validation des connexions selon la réalité physique des connecteurs</li>
+<li>Sauvegarde locale automatique (localStorage)</li>
+</ul>
+
+<hr>
+
+<h2 id="dmarrage-rapide">Démarrage rapide</h2>
+
+<h3>Sur PC</h3>
+<li>Ouvrir <code>index.html</code> dans un navigateur (Chrome, Firefox, Edge, Safari)</li>
+<li>La bibliothèque est visible à gauche</li>
+<li>Glisser un équipement depuis la bibliothèque vers le canvas</li>
+<li>Glisser depuis un port d'un équipement vers un port d'un autre pour les connecter</li>
+<li>Sauvegarder via <strong>💾 Preset</strong></li>
+
+<h3>Sur smartphone</h3>
+<li>Ouvrir l'URL hébergée dans Safari (iOS) ou Chrome (Android)</li>
+<li>La bibliothèque s'ouvre via <strong>📚 Biblio.</strong> dans la barre du bas</li>
+<li>Appuyer sur <strong>+</strong> à côté d'un équipement pour l'ajouter</li>
+<li>Glisser depuis un port vers un autre port pour connecter</li>
+<li>Pincer avec deux doigts pour zoomer/dézoomer</li>
+
+<hr>
+
+<h2 id="interface">Interface</h2>
+
+<h3>PC — Layout principal</h3>
+
+<pre><code class="lang-">
+┌──────────────────────────────────────────────────────┐
+│ HEADER : Logo · Outils · Actions                     │
+├──────────────┬────────────────────────┬──────────────┤
+│  BIBLIOTHÈQUE│      CANVAS            │  PROPRIÉTÉS  │
+│  (gauche)    │   (espace de travail)  │  (droite)    │
+│              │                        │              │
+│  Recherche   │  Nodes + connexions    │  Infos node  │
+│  Catégories  │  Minimap (haut droite) │  Prérequis   │
+│  Liste items │  Légende (bas gauche)  │  Connexions  │
+│              │  Zoom +/⊡/- (bas drt)  │  Presets     │
+└──────────────┴────────────────────────┴──────────────┘
+</code></pre>
+
+<p><strong>Panneaux latéraux</strong> : Cliquer sur les petites flèches <code>‹</code> / <code>›</code> sur les bords pour masquer/afficher les panneaux et agrandir le canvas.</p>
+
+<h3>Smartphone — Layout</h3>
+
+<pre><code class="lang-">
+┌─────────────────────────────────┐
+│ HEADER : Logo · Outils          │
+├─────────────────────────────────┤
+│                                 │
+│    CANVAS (plein écran)         │
+│    Minimap haut droite          │
+│    Zoom +/⊡/- bas droite        │
+│                                 │
+├─────────────────────────────────┤
+│ ↖Sélect │📚Biblio│⚙Infos│↩│•••  │
+└─────────────────────────────────┘
+</code></pre>
+
+<p><strong>Barre de navigation bas (smartphone uniquement) :</strong></p>
+
+<table><thead><tr>
+<th>Bouton</th>
+<th>Fonction</th>
+</tr></thead><tbody>
+<tr>
+<td>↖ Sélect.</td>
+<td>Mode sélection/déplacement (défaut)</td>
+</tr>
+<tr>
+<td>📚 Biblio.</td>
+<td>Ouvre la bibliothèque d'équipements</td>
+</tr>
+<tr>
+<td>⚙ Infos</td>
+<td>Ouvre les propriétés de l'élément sélectionné</td>
+</tr>
+<tr>
+<td>↩ Annuler</td>
+<td>Annule la dernière action</td>
+</tr>
+<tr>
+<td>••• Plus</td>
+<td>Menu actions secondaires (preset, export, thème, effacer)</td>
+</tr>
+</table>
+
+<hr>
+
+<h2 id="bibliothque-d-quipements">Bibliothèque d'équipements</h2>
+
+<h3>Recherche</h3>
+
+<ul>
+<li><strong>PC</strong> : Taper directement dans le champ de recherche (barre latérale gauche). La croix <strong>✕</strong> efface la recherche.</li>
+<li><strong>Smartphone</strong> : Appuyer sur <strong>📚 Biblio.</strong> → champ de recherche en haut du panel. La croix <strong>✕</strong> efface.</li>
+<li>Recherche floue : <code>sm58</code>, <code>dante</code>, <code>di</code>, <code>k12</code>, <code>atem</code>, <code>ndi</code>, etc.</li>
+<li>La recherche filtre par nom, sous-titre et tags simultanément.</li>
+</ul>
+
+<h3>Catégories</h3>
+
+<p>Les équipements sont organisés en groupes :</p>
+
+<p><strong>Sources</strong> : Micros dynamiques · Condensateurs · Micros ruban · Micros HF · Cravate · Col de cygne</p>
+
+<p><strong>Traitement</strong> : Tables numériques · Tables analogiques · Processeurs/EQ · Interfaces audio</p>
+
+<p><strong>Diffusion</strong> : Enceintes actives · Enceintes passives · Caissons de basse · Retours scène</p>
+
+<p><strong>Amplification</strong> : Amplificateurs</p>
+
+<p><strong>Interface</strong> : Boîtes DI</p>
+
+<p><strong>Infrastructure</strong> : Stage Box · Accessoires</p>
+
+<p><strong>Capture</strong> : Enregistreurs</p>
+
+<p><strong>Instruments</strong> : Cordes · Claviers · Vents · Percussions</p>
+
+<p><strong>Vidéo</strong> : Vidéo / Projection</p>
+
+<p><strong>Régie Streaming</strong> : Caméras · Cartes de capture · Mélangeurs vidéo · Encodeurs streaming · Ordinateurs/Logiciels · Moniteurs régie · Réseau · Audio streaming · Tally/Intercom · Accessoires régie</p>
+
+<ul>
+<li><strong>PC</strong> : Cliquer sur l'icône d'une catégorie pour filtrer. Cliquer à nouveau pour désélectionner.</li>
+<li><strong>Smartphone</strong> : Même logique dans la barre horizontale de catégories en haut du panel bibliothèque.</li>
+<li>La catégorie active est toujours visible avec sa couleur de fond.</li>
+</ul>
+
+<h3>Favoris</h3>
+
+<ul>
+<li>Cliquer sur ★ à côté d'un équipement pour l'ajouter aux favoris.</li>
+<li>Cliquer sur <strong>★ [n]</strong> en haut de la bibliothèque pour afficher uniquement les favoris.</li>
+<li>Les favoris sont persistants entre les sessions.</li>
+</ul>
+
+<h3>Ajouter un équipement personnalisé</h3>
+
+<ul>
+<li><strong>PC</strong> : Cliquer sur <strong>+ Ajouter</strong> en haut de la bibliothèque.</li>
+<li><strong>Smartphone</strong> : ••• Plus → (non disponible en direct, utiliser la version PC).</li>
+<li>Remplir : Nom, Catégorie, Sous-titre, Description, Prérequis, Tags, Phantom 48V.</li>
+<li>L'équipement personnalisé apparaît dans la bibliothèque avec les autres.</li>
+<li>⚠ Les ports ne peuvent pas être configurés sur les équipements personnalisés (connexions non disponibles).</li>
+</ul>
+
+<hr>
+
+<h2 id="ajouter-des-lments-au-canvas">Ajouter des éléments au canvas</h2>
+
+<h3>PC</h3>
+
+<li><strong>Glisser-déposer</strong> : Cliquer et glisser un équipement depuis la bibliothèque vers le canvas. Il se place exactement là où vous le déposez (compensé selon le niveau de zoom).</li>
+<li><strong>Bouton +</strong> : Cliquer sur le bouton <strong>+</strong> bleu à droite de l'équipement → il s'ajoute au centre du canvas.</li>
+
+<h3>Smartphone</h3>
+
+<li><strong>Bouton +</strong> : Appuyer sur <strong>+</strong> à droite de l'équipement dans la bibliothèque. Le panel se ferme automatiquement et l'équipement apparaît sur le canvas.</li>
+<li>Le glisser-déposer depuis la bibliothèque n'est pas disponible sur mobile.</li>
+
+<h3>Déplacer un élément</h3>
+
+<ul>
+<li><strong>PC</strong> : Cliquer et glisser le node (en dehors des ports).</li>
+<li><strong>Smartphone</strong> : Poser le doigt sur le node et glisser. Le déplacement démarre après un léger mouvement (seuil de 6px) pour distinguer tap et drag.</li>
+</ul>
+
+<hr>
+
+<h2 id="naviguer-dans-le-canvas">Naviguer dans le canvas</h2>
+
+<h3>Zoom</h3>
+
+<table><thead><tr>
+<th>Action</th>
+<th>PC</th>
+<th>Smartphone</th>
+</tr></thead><tbody>
+<tr>
+<td>Zoomer</td>
+<td>Molette ↑ ou bouton <strong>+</strong></td>
+<td>Pincer (écarter 2 doigts) ou bouton <strong>+</strong></td>
+</tr>
+<tr>
+<td>Dézoomer</td>
+<td>Molette ↓ ou bouton <strong>−</strong></td>
+<td>Pincer (rapprocher 2 doigts) ou bouton <strong>−</strong></td>
+</tr>
+<tr>
+<td>Tout afficher</td>
+<td>Bouton <strong>⊡</strong></td>
+<td>Bouton <strong>⊡</strong></td>
+</tr>
+<tr>
+<td>Réinitialiser vue</td>
+<td>Bouton <strong>⊡</strong> ou clic minimap</td>
+<td>Bouton <strong>⊡</strong> ou tap minimap</td>
+</tr>
+</table>
+
+<ul>
+<li>Zoom minimum : ×0.08 (vue très large)</li>
+<li>Zoom maximum : ×4 (très zoomé)</li>
+<li>Le zoom reste persistant — il ne se réinitialise pas seul.</li>
+</ul>
+
+<h3>Navigation (Pan)</h3>
+
+<table><thead><tr>
+<th>Action</th>
+<th>PC</th>
+<th>Smartphone</th>
+</tr></thead><tbody>
+<tr>
+<td>Se déplacer dans le canvas</td>
+<td>Pas disponible (utiliser zoom + nodes comme repères)</td>
+<td>Glisser avec <strong>1 doigt</strong> sur le fond vide du canvas</td>
+</tr>
+</table>
+
+<h3>Minimap</h3>
+
+<p>La minimap (haut droite du canvas) affiche une vue d'ensemble de tous les nodes avec leur couleur de catégorie, et un rectangle bleu indiquant la zone visible actuelle.</p>
+
+<ul>
+<li><strong>Cliquer/tapper</strong> sur la minimap → <code>fitAll()</code> : ajuste le zoom pour voir tous les éléments.</li>
+<li>Elle se met à jour en temps réel pendant le zoom, le pan et l'ajout d'éléments.</li>
+</ul>
+
+<hr>
+
+<h2 id="crer-des-connexions-signal-flow">Créer des connexions (signal flow)</h2>
+
+<h3>Principe</h3>
+
+<p>Les connexions respectent la compatibilité physique des connecteurs AV :</p>
+<ul>
+<li>XLR mâle ▶ → XLR femelle ◀ uniquement</li>
+<li>Jack TS ▶ → Entrée Jack ◀ (DI, ampli, interface)</li>
+<li>Jack TRS ▶ → Entrée Jack ◀ ou XLR femelle ◀</li>
+<li>Speakon ampli ▶ → Speakon enceinte ◀</li>
+<li>Dante ▶ → Dante ◀</li>
+<li>AES50 ▶ → AES50 ◀</li>
+<li>SDI ▶ → SDI ◀</li>
+<li>NDI ▶ → NDI ◀ ou Ethernet ◀</li>
+<li>USB ▶ → USB ◀</li>
+<li>USB-C ▶ → USB-C ◀ ou USB ◀</li>
+<li>HDMI ▶ → HDMI ◀</li>
+<li>Ethernet ▶ → Ethernet ◀ ou NDI ◀</li>
+<li>Tally ▶ → Tally ◀</li>
+</ul>
+
+<p>Une connexion incompatible est <strong>bloquée</strong> avec un message d'erreur explicite.</p>
+
+<h3>Méthode : Glisser-déposer (recommandée, PC et smartphone)</h3>
+
+<li>Poser le doigt ou la souris sur un port (carré avec point coloré).</li>
+<li><strong>Glisser</strong> vers le port cible sur un autre équipement.</li>
+<li>Les ports compatibles s'illuminent en <strong>vert pulsé</strong> pendant le glissé.</li>
+<li>Le port le plus proche sous le doigt/curseur se met en surbrillance.</li>
+<li><strong>Relâcher</strong> au-dessus ou à proximité (72px sur mobile, 44px sur desktop) d'un port compatible → la connexion se crée.</li>
+<li>Un fil coloré apparaît selon le type de câble.</li>
+
+<blockquote><strong>Astuce smartphone</strong> : Pas besoin d'être précis au pixel. Le système détecte le port compatible le plus proche dans un rayon de 72px autour du doigt.</blockquote>
+
+<h3>Méthode : Deux taps (alternative smartphone)</h3>
+
+<li>Tapper brièvement sur un port (sans glisser) → bannière de connexion apparaît en haut.</li>
+<li>Les ports compatibles s'illuminent en vert.</li>
+<li>Tapper sur un port vert sur un autre équipement → connexion créée.</li>
+<li>Appuyer sur <strong>✕</strong> dans la bannière ou tapper le fond vide pour annuler.</li>
+
+<h3>Annuler une connexion en cours</h3>
+
+<ul>
+<li><strong>PC</strong> : Touche <code>Échap</code> ou cliquer sur le fond vide du canvas.</li>
+<li><strong>Smartphone</strong> : Bouton <strong>✕</strong> dans la bannière bleue en haut, ou tapper le fond vide.</li>
+</ul>
+
+<h3>Supprimer une connexion</h3>
+
+<ul>
+<li><strong>PC</strong> : Double-cliquer sur le fil. Au survol, une info-bulle apparaît avec le type de câble et le rappel "2×clic".</li>
+<li><strong>Smartphone</strong> : Appui long (600ms) sur le fil → boîte de confirmation.</li>
+</ul>
+
+<hr>
+
+<h2 id="supprimer-des-lments">Supprimer des éléments</h2>
+
+<h3>Supprimer un node</h3>
+
+<ul>
+<li><strong>PC</strong> : Cliquer sur le <strong>✕</strong> en haut à droite du node, ou sélectionner puis appuyer sur <code>Suppr</code> ou <code>Retour arrière</code>.</li>
+<li><strong>Smartphone</strong> : Appuyer sur le <strong>✕</strong> en haut à droite du node.</li>
+<li>⚠ La suppression d'un node supprime aussi toutes ses connexions.</li>
+</ul>
+
+<h3>Annuler la dernière action</h3>
+
+<ul>
+<li><strong>PC</strong> : <code>Ctrl+Z</code> (Windows/Linux) ou <code>Cmd+Z</code> (Mac), ou bouton <strong>↩</strong> dans le header.</li>
+<li><strong>Smartphone</strong> : Bouton <strong>↩</strong> dans la barre du bas.</li>
+<li>L'historique conserve les 30 dernières actions (ajout node, suppression node, ajout fil, suppression fil).</li>
+</ul>
+
+<h3>Effacer tout le canvas</h3>
+
+<ul>
+<li><strong>PC</strong> : Bouton <strong>🗑</strong> dans le header → confirmation requise.</li>
+<li><strong>Smartphone</strong> : <strong>••• Plus</strong> → <strong>🗑 Effacer le canvas</strong> → confirmation requise.</li>
+</ul>
+
+<hr>
+
+<h2 id="panneau-proprits">Panneau Propriétés</h2>
+
+<p>Affiche les informations de l'élément sélectionné :</p>
+
+<ul>
+<li><strong>Nom et catégorie</strong></li>
+<li><strong>Tags</strong> (type, technologie, usage)</li>
+<li><strong>Description</strong> technique</li>
+<li><strong>Caractéristiques</strong> : fréquence, phantom 48V requis/non requis</li>
+<li><strong>Ports</strong> : liste de tous les ports avec direction (▶ sortie / ◀ entrée) et type de connecteur</li>
+<li><strong>⚠ Avertissements AV</strong> : phantom sur ruban, instrument sans DI, etc.</li>
+<li><strong>Prérequis</strong> : câbles, alimentations, accessoires nécessaires</li>
+<li><strong>Connexions actives</strong> : liste des fils reliés à cet élément avec le type de câble et l'équipement cible</li>
+</ul>
+
+<h3>Modifier un élément</h3>
+
+<ul>
+<li><strong>PC</strong> : Sélectionner un node → cliquer <strong>✏ Modifier</strong> en haut du panneau droit → modifier nom, description, prérequis.</li>
+<li><strong>Smartphone</strong> : Appuyer sur <strong>⚙ Infos</strong> dans la barre du bas après sélection → les infos s'affichent dans le panel. Pas d'édition directe sur mobile.</li>
+</ul>
+
+<h3>Accès sur smartphone</h3>
+
+<ul>
+<li>Appuyer sur <strong>⚙ Infos</strong> dans la barre du bas pour ouvrir le panneau propriétés.</li>
+<li>Ou sélectionner un node → le panel s'ouvre automatiquement.</li>
+</ul>
+
+<hr>
+
+<h2 id="presets-et-sauvegarde">Presets et sauvegarde</h2>
+
+<h3>Sauvegarde automatique</h3>
+
+<p>Tout le synoptique (nodes et connexions) est sauvegardé automatiquement dans le <code>localStorage</code> du navigateur à chaque modification. Il se recharge à l'ouverture.</p>
+
+<blockquote>⚠ La sauvegarde est locale au navigateur. Vider le cache = perdre les données. Utiliser l'export JSON pour une sauvegarde externe.</blockquote>
+
+<h3>Presets nommés</h3>
+
+<ul>
+<li><strong>PC</strong> : Bouton <strong>💾 Preset</strong> dans le header → saisir un nom → le preset s'ajoute dans la liste en bas du panneau droit.</li>
+<li><strong>Smartphone</strong> : <strong>••• Plus</strong> → <strong>💾 Sauvegarder un preset</strong> → saisir un nom.</li>
+<li>Cliquer sur un preset pour le charger (remplace le canvas actuel).</li>
+<li>Cliquer sur <strong>✕</strong> à droite d'un preset pour le supprimer.</li>
+<li>Les presets sont persistants entre sessions (localStorage).</li>
+</ul>
+
+<hr>
+
+<h2 id="export-et-impression">Export et impression</h2>
+
+<h3>Export JSON</h3>
+
+<p>Exporte le synoptique complet (nodes + connexions + positions) en fichier <code>.json</code>.</p>
+
+<ul>
+<li><strong>PC</strong> : Bouton <strong>⬇ JSON</strong> dans le header.</li>
+<li><strong>Smartphone</strong> : <strong>••• Plus</strong> → <strong>⬇ Exporter JSON</strong>.</li>
+</ul>
+
+<blockquote>Le fichier JSON peut être partagé ou archivé. L'import JSON n'est pas encore disponible dans cette version.</blockquote>
+
+<h3>Impression / PDF</h3>
+
+<ul>
+<li><strong>PC</strong> : Bouton <strong>🖨</strong> dans le header → dialogue impression du navigateur. Choisir "Enregistrer en PDF" pour un export PDF propre.</li>
+<li><strong>Smartphone</strong> : <strong>••• Plus</strong> → <strong>🖨 Imprimer / PDF</strong> → utiliser le partage iOS/Android pour "Imprimer" ou "Enregistrer en PDF".</li>
+<li>Lors de l'impression : header, panneaux latéraux, légende et barre du bas sont masqués. Le canvas s'affiche sur fond blanc.</li>
+</ul>
+
+<hr>
+
+<h2 id="thme-et-affichage">Thème et affichage</h2>
+
+<ul>
+<li><strong>Thème clair</strong> : activé par défaut.</li>
+<li><strong>Thème sombre</strong> : bouton <strong>☀/🌙</strong> dans le header (PC) ou <strong>••• Plus → 🌗 Changer le thème</strong> (smartphone).</li>
+<li>Le thème est mémorisé entre les sessions.</li>
+</ul>
+
+<h3>Légende des câbles</h3>
+
+<p>Affichée en bas à gauche du canvas. Cliquer sur <strong>🗺</strong> dans le header pour l'afficher/masquer.</p>
+
+<hr>
+
+<h2 id="raccourcis-clavier-pc">Raccourcis clavier (PC)</h2>
+
+<table><thead><tr>
+<th>Touche</th>
+<th>Action</th>
+</tr></thead><tbody>
+<tr>
+<td><code>S</code></td>
+<td>Mode Sélection</td>
+</tr>
+<tr>
+<td><code>Échap</code></td>
+<td>Annuler connexion en cours / Désélectionner</td>
+</tr>
+<tr>
+<td><code>Ctrl+Z</code> / <code>Cmd+Z</code></td>
+<td>Annuler dernière action</td>
+</tr>
+<tr>
+<td><code>Suppr</code> / <code>Retour</code></td>
+<td>Supprimer l'élément sélectionné</td>
+</tr>
+</table>
+
+<hr>
+
+<h2 id="rfrence-des-types-de-cbles">Référence des types de câbles</h2>
+
+<table><thead><tr>
+<th>Couleur</th>
+<th>Type</th>
+<th>Usage typique</th>
+</tr></thead><tbody>
+<tr>
+<td>🔵 Cyan</td>
+<td>XLR</td>
+<td>Micro → console, console → enceinte active</td>
+</tr>
+<tr>
+<td>🟠 Orange</td>
+<td>Jack 6.35</td>
+<td>Instrument → DI, DI → console</td>
+</tr>
+<tr>
+<td>🟡 Jaune</td>
+<td>Speakon NL4</td>
+<td>Ampli → enceinte passive</td>
+</tr>
+<tr>
+<td>🟣 Violet</td>
+<td>Dante</td>
+<td>Console Dante → stage box Dante, enceinte Dante</td>
+</tr>
+<tr>
+<td>🟣 Violet clair</td>
+<td>AES50</td>
+<td>Console → stage box AES50</td>
+</tr>
+<tr>
+<td>🔵 Indigo</td>
+<td>MADI</td>
+<td>Console touring → MixRack</td>
+</tr>
+<tr>
+<td>🩷 Rose</td>
+<td>HDMI</td>
+<td>Source vidéo → mélangeur, mélangeur → écran</td>
+</tr>
+<tr>
+<td>🟢 Vert</td>
+<td>RCA</td>
+<td>Lecteur CD → console</td>
+</tr>
+<tr>
+<td>🔵 Bleu roi</td>
+<td>SDI</td>
+<td>Caméra broadcast → switcher vidéo</td>
+</tr>
+<tr>
+<td>🟣 Indigo foncé</td>
+<td>NDI</td>
+<td>Caméra PTZ → switch réseau</td>
+</tr>
+<tr>
+<td>🟡 Ambre</td>
+<td>USB / USB-C</td>
+<td>Webcam → PC, interface audio → PC</td>
+</tr>
+<tr>
+<td>🟢 Émeraude</td>
+<td>Ethernet</td>
+<td>Switch NDI, contrôle PTZ, streaming</td>
+</tr>
+<tr>
+<td>🔴 Rouge</td>
+<td>Tally</td>
+<td>Switcher → système tally caméra</td>
+</tr>
+</table>
+
+<hr>
+
+<h2 id="avertissements-av-automatiques">Avertissements AV automatiques</h2>
+
+<p>L'application détecte et signale automatiquement les situations dangereuses ou sous-optimales :</p>
+
+<h3>🔴 Micro ruban + console</h3>
+<p><strong>Déclencheur</strong> : Un micro ruban (Royer R-121, Beyerdynamic M160) est connecté à une table de mixage.</p>
+<p><strong>Message</strong> : "Vérifiez que le Phantom 48V est OFF sur cette voie — un ruban s'y détruit !"</p>
+<p><strong>Action</strong> : Désactiver le phantom 48V sur la voie concernée avant d'allumer le micro.</p>
+
+<h3>⚠ Instrument Jack → console directement</h3>
+<p><strong>Déclencheur</strong> : Une guitare, basse ou clavier est connecté directement à une entrée XLR de console.</p>
+<p><strong>Message</strong> : "Jack instrument → console directement : risque de bruit de masse. Utilisez une DI."</p>
+<p><strong>Action</strong> : Insérer une boîte DI active (ex: Radial J48) entre l'instrument et la console.</p>
+
+<p>Les avertissements apparaissent :</p>
+<ul>
+<li>Sur le node concerné (bandeau coloré sous les ports)</li>
+<li>Dans le panneau Propriétés</li>
+<li>Sous forme de toast au moment de la connexion</li>
+</ul>
+
+<hr>
+
+<h2 id="hbergement-et-dploiement">Hébergement et déploiement</h2>
+
+<p>SynOptic AV Pro v3 est un fichier HTML unique autonome. Aucun serveur, aucune base de données.</p>
+
+<h3>Option 1 — Netlify Drop (le plus simple, gratuit)</h3>
+<li>Aller sur <a href="https://app.netlify.com/drop">app.netlify.com/drop</a></li>
+<li>Glisser le fichier <code>index.html</code></li>
+<li>URL publique instantanée (ex: <code>amazing-name-123.netlify.app</code>)</li>
+<li>Pour une URL fixe : créer un compte Netlify gratuit</li>
+
+<h3>Option 2 — GitHub Pages (gratuit, version contrôlée)</h3>
+<li>Créer un repository GitHub</li>
+<li>Uploader <code>index.html</code></li>
+<li>Settings → Pages → Branch: main → Save</li>
+<li>URL : <code>tonpseudo.github.io/synoptic-av</code></li>
+
+<h3>Option 3 — Vercel (gratuit, déploiement automatique)</h3>
+<li>Connecter le repository GitHub à Vercel</li>
+<li>Déploiement automatique à chaque push</li>
+
+<h3>Domaine personnalisé</h3>
+<p>Toutes les options ci-dessus acceptent un domaine custom (ex: <code>synoptic.monsite.fr</code>) acheté sur OVH ou Namecheap (~10€/an).</p>
+
+<hr>
+
+<h2 id="notes-de-version">Notes de version</h2>
+
+<h3>v3 (actuelle)</h3>
+<ul>
+<li>Moteur de signal flow réel : matrice de compatibilité physique des connecteurs</li>
+<li>128 équipements (dont 46 régie streaming)</li>
+<li>Drag-to-connect avec snap de proximité (72px mobile, 44px desktop)</li>
+<li>Zoom/pan natif : pinch 2 doigts, molette desktop</li>
+<li>Minimap temps réel avec indicateur de position</li>
+<li>Navigation mobile : barre du bas fixe z-index:9999</li>
+<li>Thème clair par défaut</li>
+<li>Avertissements AV automatiques (phantom sur ruban, DI manquante)</li>
+<li>Presets nommés, export JSON, impression PDF</li>
+<li>Historique 30 actions (undo)</li>
+</ul>
+
+<hr>
+
+<p>*Documentation générée automatiquement — à mettre à jour à chaque nouvelle version de index.html*</p>
+</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
